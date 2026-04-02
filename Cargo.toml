@@ -11,6 +11,9 @@ description = "Reusable ground vehicle controller for Bevy with suspension, stee
 bevy = "0.18"
 avian3d = { version = "0.6", default-features = false, features = ["3d", "f32", "parry-f32", "default-collider", "collider-from-mesh", "debug-plugin", "bevy_scene", "bevy_picking", "xpbd_joints"] }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+avian3d = { version = "0.6", features = ["parallel"] }
+
 [workspace]
 
 [lints.clippy]
