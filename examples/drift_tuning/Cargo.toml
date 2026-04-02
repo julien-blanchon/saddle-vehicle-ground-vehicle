@@ -1,0 +1,13 @@
+[package]
+name = "ground_vehicle_example_drift_tuning"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+bevy = { workspace = true }
+ground_vehicle = { workspace = true }
+ground_vehicle_example_support = { path = "../support" }
+
+[lints]
+workspace = true

@@ -1,0 +1,14 @@
+[package]
+name = "ground_vehicle_example_support"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+bevy = { workspace = true }
+avian3d = { workspace = true }
+bevy_enhanced_input = { workspace = true }
+ground_vehicle = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,22 @@
+[workspace]
+members = [
+    "support",
+    "basic",
+    "multi_axle",
+    "drift_tuning",
+    "skid_steer",
+    "slope_stability",
+    "lab",
+]
+resolver = "3"
+
+[workspace.dependencies]
+bevy = "0.18"
+avian3d = "0.6"
+bevy_enhanced_input = "0.24"
+saddle-vehicle-ground-vehicle = { path = ".." }
+
+[workspace.lints.clippy]
+too_many_arguments = "allow"
+type_complexity = "allow"
+nonstandard_macro_braces = "warn"
