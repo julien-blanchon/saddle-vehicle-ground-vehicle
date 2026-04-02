@@ -9,7 +9,7 @@ description = "Reusable ground vehicle controller for Bevy with suspension, stee
 
 [dependencies]
 bevy = "0.18"
-avian3d = "0.6"
+avian3d = { version = "0.6", default-features = false, features = ["3d", "f32", "parry-f32", "default-collider", "collider-from-mesh", "debug-plugin", "bevy_scene", "bevy_picking", "xpbd_joints"] }
 
 [workspace]
 

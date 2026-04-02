@@ -12,10 +12,10 @@ resolver = "3"
 
 [workspace.dependencies]
 bevy = "0.18"
-avian3d = "0.6"
+avian3d = { version = "0.6", default-features = false, features = ["3d", "f32", "parry-f32", "default-collider", "collider-from-mesh", "debug-plugin", "bevy_scene", "bevy_picking", "xpbd_joints"] }
 bevy_enhanced_input = "0.24"
 saddle-vehicle-ground-vehicle = { path = ".." }
-ground_vehicle = { path = ".." }
+ground_vehicle = { package = "saddle-vehicle-ground-vehicle", path = ".." }
 
 [workspace.lints.clippy]
 too_many_arguments = "allow"

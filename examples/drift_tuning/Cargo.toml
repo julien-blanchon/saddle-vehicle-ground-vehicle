@@ -6,7 +6,7 @@ publish = false
 
 [dependencies]
 bevy = { workspace = true }
-saddle-vehicle-ground-vehicle = { workspace = true }
+ground_vehicle = { workspace = true }
 ground_vehicle_example_support = { path = "../support" }
 
 [lints]
