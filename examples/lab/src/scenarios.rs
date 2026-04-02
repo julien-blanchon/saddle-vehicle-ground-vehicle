@@ -1,12 +1,12 @@
 use avian3d::prelude::{AngularVelocity, LinearVelocity};
 use bevy::prelude::*;
+use bevy_enhanced_input::prelude::ContextActivity;
+use ground_vehicle::{GroundVehicleControl, GroundVehicleTelemetry};
 use saddle_bevy_e2e::{
     action::Action,
     actions::{assertions, inspect},
     scenario::Scenario,
 };
-use bevy_enhanced_input::prelude::ContextActivity;
-use ground_vehicle::{GroundVehicleControl, GroundVehicleTelemetry};
 
 use crate::{
     ActiveVehicle, LabState,
