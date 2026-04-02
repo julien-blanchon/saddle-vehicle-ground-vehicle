@@ -8,7 +8,7 @@ publish = false
 bevy = { workspace = true }
 avian3d = { workspace = true }
 bevy_enhanced_input = { workspace = true }
-ground_vehicle = { workspace = true }
+saddle-vehicle-ground-vehicle = { workspace = true }
 
 [lints]
 workspace = true
