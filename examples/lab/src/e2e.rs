@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_e2e::{E2EPlugin, E2ESet, action::Action, init_scenario};
+use saddle_bevy_e2e::{E2EPlugin, E2ESet, action::Action, init_scenario};
 use ground_vehicle::GroundVehicleSystems;
 
 use crate::scenarios;
