@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<script>
+			(() => {
+				document.documentElement.classList.add('js');
+				const storageKey = 'docs-theme';
+				const storedTheme = localStorage.getItem(storageKey);
+				const isDark =
+					storedTheme === 'dark' ||
+					(storedTheme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+				document.documentElement.classList.toggle('dark', isDark);
+				document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+			})();
+		</script>
+		<link href="../../_app/immutable/entry/start.qqZssfCC.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/Bvu7IoIS.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/D6rU7RKI.js" rel="modulepreload">
+		<link href="../../_app/immutable/entry/app.efZSUQQX.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/D2PL5qU_.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/DsnmJJEf.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/CGbRUU1n.js" rel="modulepreload">
+		<link href="../../_app/immutable/nodes/0.DtVkOxeB.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/DYhHHIVh.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/Dx6OR9wo.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/D3udy8KQ.js" rel="modulepreload">
+		<link href="../../_app/immutable/nodes/2.D0rGCzIs.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/BeQm2DQd.js" rel="modulepreload">
+		<link href="../../_app/immutable/nodes/5.BOp3_yHr.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/O7QY0ZL7.js" rel="modulepreload">
+		<!--12qhfyh--><meta name="theme-color" content="#ffffff"/> <link rel="icon" type="image/svg+xml" href="../../favicon.svg"/> <meta name="description" content="Reusable ground vehicle controller for Bevy with suspension, steering, grip, and crate-local lab verification"/><!----><!--1bpnej--><!--[0--><meta name="description" content="Tuning documentation"/><!--]--><!----><title>Tuning - saddle-vehicle-ground-vehicle</title>
+		<link href="../../_app/immutable/assets/manifest.DAGDUwuc.css" rel="stylesheet">
+		<link href="../../_app/immutable/assets/0.Cu___w4E.css" rel="stylesheet">
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents"><!--[--><!--[0--><!--[--><!--[0--><!--[--><main class="relative h-dvh bg-background text-foreground"><div class="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-border bg-background px-4 py-1.5 lg:hidden"><a href="../../" class="inline-flex items-center gap-1 px-2 py-2 text-sm tracking-tight text-foreground"><span class="font-medium tracking-tight text-foreground">saddle-vehicle-ground-vehicle</span></a> <button class="-mr-2 inline-flex size-10 items-center justify-center gap-2 rounded-sm text-sm whitespace-nowrap text-foreground transition-colors duration-150 ease-out hover:bg-background-muted lg:hidden" aria-label="Toggle menu"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="20" height="20" aria-hidden="true"><!--[-1--><!--]--><path d="M4 6H28V8H4z"></path><path d="M4 24H28V26H4z"></path><path d="M4 12H28V14H4z"></path><path d="M4 18H28V20H4z"></path></svg><!----></button></div> <!--[-1--><!--]--><!----> <div class="flex h-full w-full min-w-0 lg:grid lg:grid-cols-[22rem_minmax(0,1fr)] lg:pr-4 xl:grid-cols-[22rem_minmax(0,56rem)_18rem] xl:justify-center"><div class="hidden lg:block"><aside class="flex h-dvh flex-col bg-background" aria-label="Documentation sidebar"><div class="flex flex-col gap-4 p-4"><a href="../../" class="flex items-center gap-2"><span class="text-xl font-medium tracking-tight text-foreground">saddle-vehicle-ground-vehicle</span></a> <!--[0--><button type="button" class="group inset-shadow relative flex h-9 w-full items-center gap-2 rounded-sm bg-background-inset px-3 py-1.5 text-sm font-medium text-foreground-muted/70 transition-[color] duration-150 ease-out hover:text-foreground-muted"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true" class="text-foreground-muted/70"><!--[-1--><!--]--><path d="M29,27.5859l-7.5521-7.5521a11.0177,11.0177,0,1,0-1.4141,1.4141L27.5859,29ZM4,13a9,9,0,1,1,9,9A9.01,9.01,0,0,1,4,13Z"></path></svg><!----> <span class="flex-1 text-left">Search...</span> <!--[0--><kbd class="card pointer-events-none relative hidden h-5 items-center gap-1 rounded-xs bg-background px-1.5 font-mono text-[10px] font-medium text-foreground-muted/70 select-none sm:flex">⌘ K</kbd><!--]--></button><!--]--><!----></div> <div class="relative flex flex-col overflow-hidden flex-1 svelte-1lcbi17"><div class="scrollbar-hide min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto p-4 svelte-1lcbi17" style="mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent);"><nav class="flex flex-col space-y-1" aria-label="Documentation pages"><h4 class="mb-2 ml-2 text-xs font-medium tracking-wide text-foreground-muted/70 uppercase">Docs</h4> <!--[--><!--[-1--><a href="../../" class="block rounded-sm px-3 py-1.5 text-sm tracking-normal transition-all duration-150 ease-out text-foreground-muted hover:bg-background-muted hover:text-foreground">Overview</a><!--]--><!--[0--><button class="flex w-full items-center justify-between rounded-sm px-3 py-1.5 text-sm font-medium tracking-normal transition-all duration-150 ease-out hover:bg-background-muted hover:text-foreground text-foreground-muted"><span>Documentation</span> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true" class="size-4 transition-transform duration-150"><!--[-1--><!--]--><path d="M22 16 12 26 10.6 24.6 19.2 16 10.6 7.4 12 6z"></path></svg><!----></button> <!--[-1--><!--]--><!--]--><!--[0--><button class="flex w-full items-center justify-between rounded-sm px-3 py-1.5 text-sm font-medium tracking-normal transition-all duration-150 ease-out hover:bg-background-muted hover:text-foreground text-foreground-muted"><span>Demos</span> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true" class="size-4 transition-transform duration-150"><!--[-1--><!--]--><path d="M22 16 12 26 10.6 24.6 19.2 16 10.6 7.4 12 6z"></path></svg><!----></button> <!--[-1--><!--]--><!--]--><!--]--></nav><!----></div></div><!----> <div class="flex items-center gap-1 p-4"><!--[0--><button type="button" class="group transition-scale inset-shadow relative inline-flex size-7 items-center justify-center rounded-sm bg-background-inset text-foreground duration-150 ease-out active:scale-[0.95]" aria-label="Switch to dark mode"><span class="sr-only">Switch to dark mode</span> <span class="transition-transform duration-150 ease-out"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true"><!--[-1--><!--]--><path d="M16,12a4,4,0,1,1-4,4,4.0045,4.0045,0,0,1,4-4m0-2a6,6,0,1,0,6,6,6,6,0,0,0-6-6Z" transform="translate(0 .005)"></path><path d="M6.854 5.375H8.854V10.333H6.854z" transform="rotate(-45 7.86 7.856)"></path><path d="M2 15.005H7V17.005000000000003H2z"></path><path d="M5.375 23.147H10.333V25.147H5.375z" transform="rotate(-45 7.86 24.149)"></path><path d="M15 25.005H17V30.005H15z"></path><path d="M23.147 21.668H25.147V26.625999999999998H23.147z" transform="rotate(-45 24.152 24.149)"></path><path d="M25 15.005H30V17.005000000000003H25z"></path><path d="M21.668 6.854H26.625999999999998V8.854H21.668z" transform="rotate(-45 24.152 7.856)"></path><path d="M15 2.005H17V7.005H15z"></path></svg><!----></span> <span class="absolute transition-transform duration-150 ease-out scale-0 blur-[2px]"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true"><!--[-1--><!--]--><path d="M13.5025,5.4136A15.0755,15.0755,0,0,0,25.096,23.6082a11.1134,11.1134,0,0,1-7.9749,3.3893c-.1385,0-.2782.0051-.4178,0A11.0944,11.0944,0,0,1,13.5025,5.4136M14.98,3a1.0024,1.0024,0,0,0-.1746.0156A13.0959,13.0959,0,0,0,16.63,28.9973c.1641.006.3282,0,.4909,0a13.0724,13.0724,0,0,0,10.702-5.5556,1.0094,1.0094,0,0,0-.7833-1.5644A13.08,13.08,0,0,1,15.8892,4.38,1.0149,1.0149,0,0,0,14.98,3Z"></path></svg><!----></span></button><!--]--> <!--[0--><a class="group transition-scale inset-shadow relative inline-flex size-7 cursor-pointer items-center justify-center rounded-sm bg-background-inset text-foreground duration-150 ease-out active:scale-[0.95]" href="https://github.com/julien-blanchon/saddle-vehicle-ground-vehicle" target="_blank" rel="noreferrer" aria-label="Open project repository (opens in a new tab)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true" class="size-4 flex-none"><!--[-1--><!--]--><path fill-rule="evenodd" d="M16,2a14,14,0,0,0-4.43,27.28c.7.13,1-.3,1-.67s0-1.21,0-2.38c-3.89.84-4.71-1.88-4.71-1.88A3.71,3.71,0,0,0,6.24,22.3c-1.27-.86.1-.85.1-.85A2.94,2.94,0,0,1,8.48,22.9a3,3,0,0,0,4.08,1.16,2.93,2.93,0,0,1,.88-1.87c-3.1-.36-6.37-1.56-6.37-6.92a5.4,5.4,0,0,1,1.44-3.76,5,5,0,0,1,.14-3.7s1.17-.38,3.85,1.43a13.3,13.3,0,0,1,7,0c2.67-1.81,3.84-1.43,3.84-1.43a5,5,0,0,1,.14,3.7,5.4,5.4,0,0,1,1.44,3.76c0,5.38-3.27,6.56-6.39,6.91a3.33,3.33,0,0,1,.95,2.59c0,1.87,0,3.38,0,3.84s.25.81,1,.67A14,14,0,0,0,16,2Z"></path></svg><!----></a><!--]--></div></aside><!----></div> <div class="inset-shadow relative mx-auto h-full w-full max-w-4xl min-w-0 overflow-hidden border border-border bg-background-inset pt-12 lg:my-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-visible lg:rounded-xl lg:pt-0"><div class="relative flex flex-col overflow-hidden mx-auto h-full w-full lg:max-h-[calc(100dvh-2rem)] svelte-1lcbi17"><div id="docs-content-container" class="scrollbar-hide min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto rounded-lg overscroll-none flex flex-col gap-8 px-4 py-8 lg:px-8 svelte-1lcbi17" style="mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent);"><section class="min-w-0 flex-1 space-y-8"><div class="space-y-4"><!--[-1--><!--]--> <h1 class="scroll-m-20 text-3xl font-medium tracking-tight text-foreground">Tuning</h1> <!--[0--><p class="max-w-4xl text-base font-normal tracking-normal text-foreground-muted">Tuning documentation</p><!--]--> <!--[0--><!--[0--><div class="relative z-20 mt-8 flex w-full gap-2 lg:hidden"><!--[0--><div class="inset-shadow w-full rounded-md bg-background-inset p-1.5"><button type="button" aria-live="polite" aria-disabled="false" class="card relative inline-flex h-9 w-full font-medium shrink-0 overflow-hidden items-center justify-center gap-2 rounded-sm bg-background px-4 py-2 text-sm whitespace-nowrap text-foreground transition-[background-color] duration-150 ease-out hover:bg-background-muted disabled:pointer-events-none disabled:opacity-50 has-[>svg]:px-3 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=size-])]:size-4 flex-1"><span class="grid place-items-center" style="grid-template-areas: 'content';"><!----><span class="flex items-center gap-2 font-medium tracking-normal text-foreground will-change-transform" style="grid-area: content;"><!--[-1--><svg role="img" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="size-4 flex-none"><title>Markdown</title><path class="stroke-current" d="M1.212 5.5h21.576c.407 0 .712.317.712.679v11.549a.695.695 0 0 1-.712.677H1.212a.695.695 0 0 1-.712-.678V6.18c0-.362.305-.679.712-.679Z"></path><path class="fill-current" d="M3.03 15.96V7.946h2.425l2.424 2.946 2.424-2.946h2.424v8.014h-2.424v-4.596L7.88 14.31l-2.424-2.946v4.596H3.03Zm15.152 0-3.636-3.89h2.424V7.947h2.424v4.125h2.424l-3.636 3.889Z"></path></svg><!--]--> <span>Copy Markdown</span></span><!----></span></button></div><!--]--> <!--[0--><div class="inset-shadow relative rounded-md bg-background-inset p-1.5"><button id="mobile-doc-actions-menu-trigger" type="button" class="card relative inline-flex h-9 w-full font-medium shrink-0 overflow-hidden items-center justify-center gap-2 rounded-sm bg-background px-4 py-2 text-sm whitespace-nowrap text-foreground transition-[background-color] duration-150 ease-out hover:bg-background-muted disabled:pointer-events-none disabled:opacity-50 has-[>svg]:px-3 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=size-])]:size-4 flex-1 w-auto! px-2.5!" aria-label="More actions" aria-haspopup="menu" aria-controls="mobile-doc-actions-menu" aria-expanded="false"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true" class="size-4"><!--[-1--><!--]--><circle cx="8" cy="16" r="2"></circle><circle cx="16" cy="16" r="2"></circle><circle cx="24" cy="16" r="2"></circle></svg><!----></button> <!--[-1--><!--]--></div><!--]--></div><!--]--><!--]--></div> <hr class="text-border"/> <div><!--[--><article data-doc-content="" class="w-full max-w-4xl"><!----><h2>Baseline Workflow</h2>
+<p>Tune vehicles in this order:</p>
+<ol>
+<li>Set mass, inertia, and center of mass.</li>
+<li>Set wheel placement and suspension travel.</li>
+<li>Make the vehicle settle at a plausible ride height.</li>
+<li>Tune drive and brake force.</li>
+<li>Tune lateral grip and steering.</li>
+<li>Add anti-roll, low-speed traction, yaw damping, and aero last.</li>
+</ol>
+<p>If too many knobs seem to fight each other, return to a simple flat-pad test with:</p>
+<ul>
+<li>one surface type</li>
+<li>debug draw off</li>
+<li>assists reduced</li>
+<li>moderate speed</li>
+<li>no handbrake</li>
+</ul>
+<h2>Light Vs Heavy Vehicles</h2>
+<h3>Light road cars</h3>
+<p>Start with:</p>
+<ul>
+<li>lower <code>mass_kg</code></li>
+<li>moderate <code>angular_inertia_kgm2</code></li>
+<li>lower <code>anti_roll_force_n_per_ratio</code></li>
+<li>faster steering rate</li>
+<li>lighter brake and drive budgets</li>
+</ul>
+<p>Symptoms of overdoing it:</p>
+<ul>
+<li>too much snap rotation under steering lift</li>
+<li>curb hits bounce the whole body upward</li>
+<li>drift threshold triggers constantly</li>
+</ul>
+<h3>Heavy trucks and utility vehicles</h3>
+<p>Start with:</p>
+<ul>
+<li>higher <code>mass_kg</code></li>
+<li>substantially higher pitch and roll inertia</li>
+<li>lower steer rate and max angle</li>
+<li>stronger service brakes</li>
+<li>more suspension travel or softer springs if off-road</li>
+<li>stronger anti-roll only after ride height is stable</li>
+</ul>
+<p>Symptoms of under-support:</p>
+<ul>
+<li>visible side-to-side rocking after every steering correction</li>
+<li>inside wheels lifting on simple ramps</li>
+<li>rear axles losing contact on gentle crests</li>
+</ul>
+<h2>Suspension</h2>
+<h3>Ride height</h3>
+<p>The neutral parked stance is controlled by the relationship between:</p>
+<ul>
+<li>chassis mass</li>
+<li>wheel count and load distribution</li>
+<li><code>rest_length_m</code></li>
+<li><code>spring_strength_n_per_m</code></li>
+</ul>
+<p>If the parked vehicle sits too low:</p>
+<ul>
+<li>increase spring strength</li>
+<li>increase rest length</li>
+<li>reduce mass</li>
+</ul>
+<p>Do not fix every sagging issue with bump-stop strength. Bump stops are for the last part of travel, not the normal ride height.</p>
+<h3>Damping</h3>
+<p><code>damper_strength_n_per_mps</code> is the first knob to touch when the car oscillates.</p>
+<ul>
+<li>Too low: repeated bobbing after landings or curb strikes</li>
+<li>Too high: the vehicle feels like it sticks or punches down into terrain</li>
+</ul>
+<h3>Anti-roll</h3>
+<p>Use <code>anti_roll_force_n_per_ratio</code> after the basic spring/damper pass is believable.</p>
+<ul>
+<li>Too little anti-roll: lazy body roll, wheel lift on off-camber transitions</li>
+<li>Too much anti-roll: diagonal wheel unloading and an unnaturally rigid stance</li>
+</ul>
+<h2>Steering</h2>
+<h3>Road vehicles</h3>
+<p>Primary knobs:</p>
+<ul>
+<li><code>max_angle_rad</code></li>
+<li><code>steer_rate_rad_per_sec</code></li>
+<li><code>ackermann_ratio</code></li>
+<li><code>minimum_speed_factor</code></li>
+</ul>
+<p>Guidance:</p>
+<ul>
+<li>Increase <code>max_angle_rad</code> for low-speed rotation and drift setups.</li>
+<li>Reduce <code>steer_rate_rad_per_sec</code> for heavy trucks and high-speed stability.</li>
+<li>Keep <code>ackermann_ratio</code> moderate if wheelbase or track width overrides are approximate rather than exact.</li>
+</ul>
+<h3>Skid steer</h3>
+<p>Use:</p>
+<ul>
+<li><code>SteeringMode::SkidSteer</code></li>
+<li>left/right <code>drive_side</code></li>
+<li><code>skid_steer_turn_scale</code></li>
+</ul>
+<p>If the vehicle pirouettes too aggressively, reduce <code>skid_steer_turn_scale</code> before weakening raw drive force.</p>
+<h2>Grip And Drift</h2>
+<h3>Arcade-to-sim bias</h3>
+<p>More arcade:</p>
+<ul>
+<li>higher low-speed traction boost</li>
+<li>more airborne upright assist</li>
+<li>lower lateral stiffness with a gentle exponent</li>
+<li>stronger yaw damping</li>
+</ul>
+<p>More sim-lite:</p>
+<ul>
+<li>reduce assists</li>
+<li>rely more on mass, load transfer, and tire grip</li>
+<li>keep handbrake multipliers closer to realistic tire behavior</li>
+</ul>
+<h3>Drift tuning</h3>
+<p>A drift-friendly setup usually needs:</p>
+<ul>
+<li>RWD or rear-biased drive</li>
+<li>more steering lock</li>
+<li>lower rear <code>lateral_grip</code></li>
+<li>reduced <code>handbrake_lateral_multiplier</code></li>
+<li>lower rear <code>handbrake_longitudinal_multiplier</code></li>
+<li>lower or softer yaw damping so the chassis can rotate</li>
+</ul>
+<p>Typical progression:</p>
+<ol>
+<li>tune normal cornering first</li>
+<li>reduce rear lateral grip a little</li>
+<li>increase steering lock</li>
+<li>use handbrake multipliers to widen the breakaway window</li>
+<li>only then adjust drift state thresholds</li>
+</ol>
+<p>If the car instantly spins instead of holding a drift:</p>
+<ul>
+<li>rear lateral grip is probably too low</li>
+<li>handbrake multiplier is probably too aggressive</li>
+<li>or yaw damping is too weak for the speed range</li>
+</ul>
+<h2>Slopes And Utility Vehicles</h2>
+<p>For predictable low-speed hill behavior:</p>
+<ul>
+<li>raise <code>park_hold_force_newtons</code></li>
+<li>keep <code>park_hold_speed_threshold_mps</code> low enough to avoid dragging while creeping</li>
+<li>increase <code>low_speed_traction_boost</code> carefully</li>
+<li>keep center of mass low</li>
+</ul>
+<p>If the vehicle chatters while stopped on a slope:</p>
+<ul>
+<li>reduce brake force slightly</li>
+<li>reduce longitudinal stiffness</li>
+<li>lower low-speed traction boost</li>
+<li>check for overly stiff springs combined with short travel</li>
+</ul>
+<h2>Aero And Stability Assists</h2>
+<p>Aerodynamic drag should shape top speed and high-speed braking feel, not replace grip tuning.</p>
+<ul>
+<li>If the vehicle refuses to coast, drag is too high.</li>
+<li>If high-speed lane changes feel floaty, a small amount of downforce may help.</li>
+<li>If a drift build stops rotating as speed rises, downforce may be masking the rear grip reduction.</li>
+</ul>
+<p>Yaw damping is a finishing pass:</p>
+<ul>
+<li>raise it when the vehicle oscillates after turn-in</li>
+<li>lower it when the vehicle refuses to rotate under deliberate input</li>
+</ul>
+<h2>Common Tuning Patterns</h2>
+<h3>Hatchback baseline</h3>
+<ul>
+<li>moderate steer lock</li>
+<li>mild Ackermann</li>
+<li>moderate front/rear lateral grip</li>
+<li>mild anti-roll</li>
+<li>little or no downforce</li>
+</ul>
+<h3>Drift coupe</h3>
+<ul>
+<li>more steering lock</li>
+<li>rear drive bias</li>
+<li>reduced rear lateral grip</li>
+<li>strong handbrake rear multiplier reduction</li>
+<li>lighter yaw damping</li>
+</ul>
+<h3>Cargo truck</h3>
+<ul>
+<li>more mass and inertia</li>
+<li>slow steering</li>
+<li>stronger brakes</li>
+<li>more anti-roll after springs are stable</li>
+<li>moderate aero drag, little downforce</li>
+</ul>
+<h3>Rover or hill-climber</h3>
+<ul>
+<li>low top speed</li>
+<li>strong hill hold</li>
+<li>generous low-speed traction support</li>
+<li>lower center of mass</li>
+<li>large wheel radius and longer suspension travel</li>
+</ul>
+<h2>Verification Loop</h2>
+<p>Use the examples and lab as a repeatable tuning harness:</p>
+<div class="code-block" data-code="cargo run -p ground_vehicle --example basic
+cargo run -p ground_vehicle --example drift_tuning
+cargo run -p ground_vehicle --example multi_axle
+cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_smoke
+cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_drift
+cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_skid_steer
+cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_slope" data-language="bash">
+					<div class="shiki-theme-light"><pre class="shiki github-light" style="background-color:#fff;color:#24292e" tabindex="0"><code><span class="line"><span style="color:#6F42C1">cargo</span><span style="color:#032F62"> run</span><span style="color:#005CC5"> -p</span><span style="color:#032F62"> ground_vehicle</span><span style="color:#005CC5"> --example</span><span style="color:#032F62"> basic</span></span>
+<span class="line"><span style="color:#6F42C1">cargo</span><span style="color:#032F62"> run</span><span style="color:#005CC5"> -p</span><span style="color:#032F62"> ground_vehicle</span><span style="color:#005CC5"> --example</span><span style="color:#032F62"> drift_tuning</span></span>
+<span class="line"><span style="color:#6F42C1">cargo</span><span style="color:#032F62"> run</span><span style="color:#005CC5"> -p</span><span style="color:#032F62"> ground_vehicle</span><span style="color:#005CC5"> --example</span><span style="color:#032F62"> multi_axle</span></span>
+<span class="line"><span style="color:#6F42C1">cargo</span><span style="color:#032F62"> run</span><span style="color:#005CC5"> -p</span><span style="color:#032F62"> ground_vehicle_lab</span><span style="color:#005CC5"> --features</span><span style="color:#032F62"> e2e</span><span style="color:#005CC5"> --</span><span style="color:#032F62"> ground_vehicle_smoke</span></span>
+<span class="line"><span style="color:#6F42C1">cargo</span><span style="color:#032F62"> run</span><span style="color:#005CC5"> -p</span><span style="color:#032F62"> ground_vehicle_lab</span><span style="color:#005CC5"> --features</span><span style="color:#032F62"> e2e</span><span style="color:#005CC5"> --</span><span style="color:#032F62"> ground_vehicle_drift</span></span>
+<span class="line"><span style="color:#6F42C1">cargo</span><span style="color:#032F62"> run</span><span style="color:#005CC5"> -p</span><span style="color:#032F62"> ground_vehicle_lab</span><span style="color:#005CC5"> --features</span><span style="color:#032F62"> e2e</span><span style="color:#005CC5"> --</span><span style="color:#032F62"> ground_vehicle_skid_steer</span></span>
+<span class="line"><span style="color:#6F42C1">cargo</span><span style="color:#032F62"> run</span><span style="color:#005CC5"> -p</span><span style="color:#032F62"> ground_vehicle_lab</span><span style="color:#005CC5"> --features</span><span style="color:#032F62"> e2e</span><span style="color:#005CC5"> --</span><span style="color:#032F62"> ground_vehicle_slope</span></span></code></pre></div>
+					<div class="shiki-theme-dark"><pre class="shiki github-dark" style="background-color:#24292e;color:#e1e4e8" tabindex="0"><code><span class="line"><span style="color:#B392F0">cargo</span><span style="color:#9ECBFF"> run</span><span style="color:#79B8FF"> -p</span><span style="color:#9ECBFF"> ground_vehicle</span><span style="color:#79B8FF"> --example</span><span style="color:#9ECBFF"> basic</span></span>
+<span class="line"><span style="color:#B392F0">cargo</span><span style="color:#9ECBFF"> run</span><span style="color:#79B8FF"> -p</span><span style="color:#9ECBFF"> ground_vehicle</span><span style="color:#79B8FF"> --example</span><span style="color:#9ECBFF"> drift_tuning</span></span>
+<span class="line"><span style="color:#B392F0">cargo</span><span style="color:#9ECBFF"> run</span><span style="color:#79B8FF"> -p</span><span style="color:#9ECBFF"> ground_vehicle</span><span style="color:#79B8FF"> --example</span><span style="color:#9ECBFF"> multi_axle</span></span>
+<span class="line"><span style="color:#B392F0">cargo</span><span style="color:#9ECBFF"> run</span><span style="color:#79B8FF"> -p</span><span style="color:#9ECBFF"> ground_vehicle_lab</span><span style="color:#79B8FF"> --features</span><span style="color:#9ECBFF"> e2e</span><span style="color:#79B8FF"> --</span><span style="color:#9ECBFF"> ground_vehicle_smoke</span></span>
+<span class="line"><span style="color:#B392F0">cargo</span><span style="color:#9ECBFF"> run</span><span style="color:#79B8FF"> -p</span><span style="color:#9ECBFF"> ground_vehicle_lab</span><span style="color:#79B8FF"> --features</span><span style="color:#9ECBFF"> e2e</span><span style="color:#79B8FF"> --</span><span style="color:#9ECBFF"> ground_vehicle_drift</span></span>
+<span class="line"><span style="color:#B392F0">cargo</span><span style="color:#9ECBFF"> run</span><span style="color:#79B8FF"> -p</span><span style="color:#9ECBFF"> ground_vehicle_lab</span><span style="color:#79B8FF"> --features</span><span style="color:#9ECBFF"> e2e</span><span style="color:#79B8FF"> --</span><span style="color:#9ECBFF"> ground_vehicle_skid_steer</span></span>
+<span class="line"><span style="color:#B392F0">cargo</span><span style="color:#9ECBFF"> run</span><span style="color:#79B8FF"> -p</span><span style="color:#9ECBFF"> ground_vehicle_lab</span><span style="color:#79B8FF"> --features</span><span style="color:#9ECBFF"> e2e</span><span style="color:#79B8FF"> --</span><span style="color:#9ECBFF"> ground_vehicle_slope</span></span></code></pre></div>
+				</div><p>Keep screenshots, telemetry, and BRP inspection in the loop instead of tuning only from feel.</p>
+<!----></article> <!----><!--]--><!----> <!--[-1--><!--]--><!----></div></section><!----></div></div><!----></div> <aside class="hidden xl:block xl:w-full xl:py-8 xl:pr-4 xl:pl-4" aria-label="Table of contents and document actions"><div class="sticky top-8 flex h-full max-h-[calc(100dvh-4rem)] min-h-0 flex-col"><!--[0--><div class="min-h-0 flex-1"><div class="contents"><!--[-1--><div class="hidden text-sm tracking-normal text-foreground-muted/70 lg:block">No headings</div><!--]--></div><!----></div><!--]--> <!--[0--><!--[0--><div class="mt-auto"><div class="flex flex-col gap-1 text-sm"><!--[0--><button type="button" aria-live="polite" aria-disabled="false" class="group/option flex items-center gap-2 overflow-hidden rounded-sm px-3 py-1.5 text-left font-medium tracking-normal text-foreground-muted transition-colors duration-150 ease-out hover:bg-background-muted hover:text-foreground"><span class="grid" style="grid-template-areas: 'content';"><!----><span class="flex items-center gap-2" style="grid-area: content;"><!--[-1--><svg role="img" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="size-4 flex-none"><title>Markdown</title><path class="stroke-current" d="M1.212 5.5h21.576c.407 0 .712.317.712.679v11.549a.695.695 0 0 1-.712.677H1.212a.695.695 0 0 1-.712-.678V6.18c0-.362.305-.679.712-.679Z"></path><path class="fill-current" d="M3.03 15.96V7.946h2.425l2.424 2.946 2.424-2.946h2.424v8.014h-2.424v-4.596L7.88 14.31l-2.424-2.946v4.596H3.03Zm15.152 0-3.636-3.89h2.424V7.947h2.424v4.125h2.424l-3.636 3.889Z"></path></svg><!--]--> <span>Copy as Markdown</span></span><!----></span></button><!--]--> <!--[0--><a class="group/option flex items-center gap-2 rounded-sm px-3 py-1.5 text-left font-medium tracking-normal text-foreground-muted transition-colors duration-150 ease-out hover:bg-background-muted hover:text-foreground" href="https://github.com/julien-blanchon/saddle-vehicle-ground-vehicle/blob/main/docs//saddle-vehicle-ground-vehicle/docs/tuning.md" target="_blank" rel="noreferrer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true" class="size-4 flex-none"><!--[-1--><!--]--><path fill-rule="evenodd" d="M16,2a14,14,0,0,0-4.43,27.28c.7.13,1-.3,1-.67s0-1.21,0-2.38c-3.89.84-4.71-1.88-4.71-1.88A3.71,3.71,0,0,0,6.24,22.3c-1.27-.86.1-.85.1-.85A2.94,2.94,0,0,1,8.48,22.9a3,3,0,0,0,4.08,1.16,2.93,2.93,0,0,1,.88-1.87c-3.1-.36-6.37-1.56-6.37-6.92a5.4,5.4,0,0,1,1.44-3.76,5,5,0,0,1,.14-3.7s1.17-.38,3.85,1.43a13.3,13.3,0,0,1,7,0c2.67-1.81,3.84-1.43,3.84-1.43a5,5,0,0,1,.14,3.7,5.4,5.4,0,0,1,1.44,3.76c0,5.38-3.27,6.56-6.39,6.91a3.33,3.33,0,0,1,.95,2.59c0,1.87,0,3.38,0,3.84s.25.81,1,.67A14,14,0,0,0,16,2Z"></path></svg><!----> <span>Open in GitHub</span> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true" class="ml-auto size-4 flex-none"><!--[-1--><!--]--><path d="M26,28H6a2.0027,2.0027,0,0,1-2-2V6A2.0027,2.0027,0,0,1,6,4H16V6H6V26H26V16h2V26A2.0027,2.0027,0,0,1,26,28Z"></path><path d="M20 2 20 4 26.586 4 18 12.586 19.414 14 28 5.414 28 12 30 12 30 2 20 2z"></path></svg><!----> <span class="sr-only">(opens in a new tab)</span></a><!--]--> <!--[-1--><!--]--> <!--[-1--><!--]--></div></div><!--]--><!--]--></div></aside></div></main><!--]--><!--]--><!----> <!--[0--><!--[-1--><!--]--><!--]--><!--]--><!--]--> <!--[-1--><!--]--><!--]-->
+			
+			<script>
+				{
+					__sveltekit_1k9qb1z = {
+						base: new URL("../..", location).pathname.slice(0, -1),
+						assets: "/saddle-vehicle-ground-vehicle"
+					};
+
+					const element = document.currentScript.parentElement;
+
+					Promise.all([
+						import("../../_app/immutable/entry/start.qqZssfCC.js"),
+						import("../../_app/immutable/entry/app.efZSUQQX.js")
+					]).then(([kit, app]) => {
+						kit.start(app, element, {
+							node_ids: [0, 2, 5],
+							data: [null,null,{type:"data",data:{html:"\u003Ch2>Baseline Workflow\u003C/h2>\n\u003Cp>Tune vehicles in this order:\u003C/p>\n\u003Col>\n\u003Cli>Set mass, inertia, and center of mass.\u003C/li>\n\u003Cli>Set wheel placement and suspension travel.\u003C/li>\n\u003Cli>Make the vehicle settle at a plausible ride height.\u003C/li>\n\u003Cli>Tune drive and brake force.\u003C/li>\n\u003Cli>Tune lateral grip and steering.\u003C/li>\n\u003Cli>Add anti-roll, low-speed traction, yaw damping, and aero last.\u003C/li>\n\u003C/ol>\n\u003Cp>If too many knobs seem to fight each other, return to a simple flat-pad test with:\u003C/p>\n\u003Cul>\n\u003Cli>one surface type\u003C/li>\n\u003Cli>debug draw off\u003C/li>\n\u003Cli>assists reduced\u003C/li>\n\u003Cli>moderate speed\u003C/li>\n\u003Cli>no handbrake\u003C/li>\n\u003C/ul>\n\u003Ch2>Light Vs Heavy Vehicles\u003C/h2>\n\u003Ch3>Light road cars\u003C/h3>\n\u003Cp>Start with:\u003C/p>\n\u003Cul>\n\u003Cli>lower \u003Ccode>mass_kg\u003C/code>\u003C/li>\n\u003Cli>moderate \u003Ccode>angular_inertia_kgm2\u003C/code>\u003C/li>\n\u003Cli>lower \u003Ccode>anti_roll_force_n_per_ratio\u003C/code>\u003C/li>\n\u003Cli>faster steering rate\u003C/li>\n\u003Cli>lighter brake and drive budgets\u003C/li>\n\u003C/ul>\n\u003Cp>Symptoms of overdoing it:\u003C/p>\n\u003Cul>\n\u003Cli>too much snap rotation under steering lift\u003C/li>\n\u003Cli>curb hits bounce the whole body upward\u003C/li>\n\u003Cli>drift threshold triggers constantly\u003C/li>\n\u003C/ul>\n\u003Ch3>Heavy trucks and utility vehicles\u003C/h3>\n\u003Cp>Start with:\u003C/p>\n\u003Cul>\n\u003Cli>higher \u003Ccode>mass_kg\u003C/code>\u003C/li>\n\u003Cli>substantially higher pitch and roll inertia\u003C/li>\n\u003Cli>lower steer rate and max angle\u003C/li>\n\u003Cli>stronger service brakes\u003C/li>\n\u003Cli>more suspension travel or softer springs if off-road\u003C/li>\n\u003Cli>stronger anti-roll only after ride height is stable\u003C/li>\n\u003C/ul>\n\u003Cp>Symptoms of under-support:\u003C/p>\n\u003Cul>\n\u003Cli>visible side-to-side rocking after every steering correction\u003C/li>\n\u003Cli>inside wheels lifting on simple ramps\u003C/li>\n\u003Cli>rear axles losing contact on gentle crests\u003C/li>\n\u003C/ul>\n\u003Ch2>Suspension\u003C/h2>\n\u003Ch3>Ride height\u003C/h3>\n\u003Cp>The neutral parked stance is controlled by the relationship between:\u003C/p>\n\u003Cul>\n\u003Cli>chassis mass\u003C/li>\n\u003Cli>wheel count and load distribution\u003C/li>\n\u003Cli>\u003Ccode>rest_length_m\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>spring_strength_n_per_m\u003C/code>\u003C/li>\n\u003C/ul>\n\u003Cp>If the parked vehicle sits too low:\u003C/p>\n\u003Cul>\n\u003Cli>increase spring strength\u003C/li>\n\u003Cli>increase rest length\u003C/li>\n\u003Cli>reduce mass\u003C/li>\n\u003C/ul>\n\u003Cp>Do not fix every sagging issue with bump-stop strength. Bump stops are for the last part of travel, not the normal ride height.\u003C/p>\n\u003Ch3>Damping\u003C/h3>\n\u003Cp>\u003Ccode>damper_strength_n_per_mps\u003C/code> is the first knob to touch when the car oscillates.\u003C/p>\n\u003Cul>\n\u003Cli>Too low: repeated bobbing after landings or curb strikes\u003C/li>\n\u003Cli>Too high: the vehicle feels like it sticks or punches down into terrain\u003C/li>\n\u003C/ul>\n\u003Ch3>Anti-roll\u003C/h3>\n\u003Cp>Use \u003Ccode>anti_roll_force_n_per_ratio\u003C/code> after the basic spring/damper pass is believable.\u003C/p>\n\u003Cul>\n\u003Cli>Too little anti-roll: lazy body roll, wheel lift on off-camber transitions\u003C/li>\n\u003Cli>Too much anti-roll: diagonal wheel unloading and an unnaturally rigid stance\u003C/li>\n\u003C/ul>\n\u003Ch2>Steering\u003C/h2>\n\u003Ch3>Road vehicles\u003C/h3>\n\u003Cp>Primary knobs:\u003C/p>\n\u003Cul>\n\u003Cli>\u003Ccode>max_angle_rad\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>steer_rate_rad_per_sec\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>ackermann_ratio\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>minimum_speed_factor\u003C/code>\u003C/li>\n\u003C/ul>\n\u003Cp>Guidance:\u003C/p>\n\u003Cul>\n\u003Cli>Increase \u003Ccode>max_angle_rad\u003C/code> for low-speed rotation and drift setups.\u003C/li>\n\u003Cli>Reduce \u003Ccode>steer_rate_rad_per_sec\u003C/code> for heavy trucks and high-speed stability.\u003C/li>\n\u003Cli>Keep \u003Ccode>ackermann_ratio\u003C/code> moderate if wheelbase or track width overrides are approximate rather than exact.\u003C/li>\n\u003C/ul>\n\u003Ch3>Skid steer\u003C/h3>\n\u003Cp>Use:\u003C/p>\n\u003Cul>\n\u003Cli>\u003Ccode>SteeringMode::SkidSteer\u003C/code>\u003C/li>\n\u003Cli>left/right \u003Ccode>drive_side\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>skid_steer_turn_scale\u003C/code>\u003C/li>\n\u003C/ul>\n\u003Cp>If the vehicle pirouettes too aggressively, reduce \u003Ccode>skid_steer_turn_scale\u003C/code> before weakening raw drive force.\u003C/p>\n\u003Ch2>Grip And Drift\u003C/h2>\n\u003Ch3>Arcade-to-sim bias\u003C/h3>\n\u003Cp>More arcade:\u003C/p>\n\u003Cul>\n\u003Cli>higher low-speed traction boost\u003C/li>\n\u003Cli>more airborne upright assist\u003C/li>\n\u003Cli>lower lateral stiffness with a gentle exponent\u003C/li>\n\u003Cli>stronger yaw damping\u003C/li>\n\u003C/ul>\n\u003Cp>More sim-lite:\u003C/p>\n\u003Cul>\n\u003Cli>reduce assists\u003C/li>\n\u003Cli>rely more on mass, load transfer, and tire grip\u003C/li>\n\u003Cli>keep handbrake multipliers closer to realistic tire behavior\u003C/li>\n\u003C/ul>\n\u003Ch3>Drift tuning\u003C/h3>\n\u003Cp>A drift-friendly setup usually needs:\u003C/p>\n\u003Cul>\n\u003Cli>RWD or rear-biased drive\u003C/li>\n\u003Cli>more steering lock\u003C/li>\n\u003Cli>lower rear \u003Ccode>lateral_grip\u003C/code>\u003C/li>\n\u003Cli>reduced \u003Ccode>handbrake_lateral_multiplier\u003C/code>\u003C/li>\n\u003Cli>lower rear \u003Ccode>handbrake_longitudinal_multiplier\u003C/code>\u003C/li>\n\u003Cli>lower or softer yaw damping so the chassis can rotate\u003C/li>\n\u003C/ul>\n\u003Cp>Typical progression:\u003C/p>\n\u003Col>\n\u003Cli>tune normal cornering first\u003C/li>\n\u003Cli>reduce rear lateral grip a little\u003C/li>\n\u003Cli>increase steering lock\u003C/li>\n\u003Cli>use handbrake multipliers to widen the breakaway window\u003C/li>\n\u003Cli>only then adjust drift state thresholds\u003C/li>\n\u003C/ol>\n\u003Cp>If the car instantly spins instead of holding a drift:\u003C/p>\n\u003Cul>\n\u003Cli>rear lateral grip is probably too low\u003C/li>\n\u003Cli>handbrake multiplier is probably too aggressive\u003C/li>\n\u003Cli>or yaw damping is too weak for the speed range\u003C/li>\n\u003C/ul>\n\u003Ch2>Slopes And Utility Vehicles\u003C/h2>\n\u003Cp>For predictable low-speed hill behavior:\u003C/p>\n\u003Cul>\n\u003Cli>raise \u003Ccode>park_hold_force_newtons\u003C/code>\u003C/li>\n\u003Cli>keep \u003Ccode>park_hold_speed_threshold_mps\u003C/code> low enough to avoid dragging while creeping\u003C/li>\n\u003Cli>increase \u003Ccode>low_speed_traction_boost\u003C/code> carefully\u003C/li>\n\u003Cli>keep center of mass low\u003C/li>\n\u003C/ul>\n\u003Cp>If the vehicle chatters while stopped on a slope:\u003C/p>\n\u003Cul>\n\u003Cli>reduce brake force slightly\u003C/li>\n\u003Cli>reduce longitudinal stiffness\u003C/li>\n\u003Cli>lower low-speed traction boost\u003C/li>\n\u003Cli>check for overly stiff springs combined with short travel\u003C/li>\n\u003C/ul>\n\u003Ch2>Aero And Stability Assists\u003C/h2>\n\u003Cp>Aerodynamic drag should shape top speed and high-speed braking feel, not replace grip tuning.\u003C/p>\n\u003Cul>\n\u003Cli>If the vehicle refuses to coast, drag is too high.\u003C/li>\n\u003Cli>If high-speed lane changes feel floaty, a small amount of downforce may help.\u003C/li>\n\u003Cli>If a drift build stops rotating as speed rises, downforce may be masking the rear grip reduction.\u003C/li>\n\u003C/ul>\n\u003Cp>Yaw damping is a finishing pass:\u003C/p>\n\u003Cul>\n\u003Cli>raise it when the vehicle oscillates after turn-in\u003C/li>\n\u003Cli>lower it when the vehicle refuses to rotate under deliberate input\u003C/li>\n\u003C/ul>\n\u003Ch2>Common Tuning Patterns\u003C/h2>\n\u003Ch3>Hatchback baseline\u003C/h3>\n\u003Cul>\n\u003Cli>moderate steer lock\u003C/li>\n\u003Cli>mild Ackermann\u003C/li>\n\u003Cli>moderate front/rear lateral grip\u003C/li>\n\u003Cli>mild anti-roll\u003C/li>\n\u003Cli>little or no downforce\u003C/li>\n\u003C/ul>\n\u003Ch3>Drift coupe\u003C/h3>\n\u003Cul>\n\u003Cli>more steering lock\u003C/li>\n\u003Cli>rear drive bias\u003C/li>\n\u003Cli>reduced rear lateral grip\u003C/li>\n\u003Cli>strong handbrake rear multiplier reduction\u003C/li>\n\u003Cli>lighter yaw damping\u003C/li>\n\u003C/ul>\n\u003Ch3>Cargo truck\u003C/h3>\n\u003Cul>\n\u003Cli>more mass and inertia\u003C/li>\n\u003Cli>slow steering\u003C/li>\n\u003Cli>stronger brakes\u003C/li>\n\u003Cli>more anti-roll after springs are stable\u003C/li>\n\u003Cli>moderate aero drag, little downforce\u003C/li>\n\u003C/ul>\n\u003Ch3>Rover or hill-climber\u003C/h3>\n\u003Cul>\n\u003Cli>low top speed\u003C/li>\n\u003Cli>strong hill hold\u003C/li>\n\u003Cli>generous low-speed traction support\u003C/li>\n\u003Cli>lower center of mass\u003C/li>\n\u003Cli>large wheel radius and longer suspension travel\u003C/li>\n\u003C/ul>\n\u003Ch2>Verification Loop\u003C/h2>\n\u003Cp>Use the examples and lab as a repeatable tuning harness:\u003C/p>\n\u003Cdiv class=\"code-block\" data-code=\"cargo run -p ground_vehicle --example basic\ncargo run -p ground_vehicle --example drift_tuning\ncargo run -p ground_vehicle --example multi_axle\ncargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_smoke\ncargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_drift\ncargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_skid_steer\ncargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_slope\" data-language=\"bash\">\n\t\t\t\t\t\u003Cdiv class=\"shiki-theme-light\">\u003Cpre class=\"shiki github-light\" style=\"background-color:#fff;color:#24292e\" tabindex=\"0\">\u003Ccode>\u003Cspan class=\"line\">\u003Cspan style=\"color:#6F42C1\">cargo\u003C/span>\u003Cspan style=\"color:#032F62\"> run\u003C/span>\u003Cspan style=\"color:#005CC5\"> -p\u003C/span>\u003Cspan style=\"color:#032F62\"> ground_vehicle\u003C/span>\u003Cspan style=\"color:#005CC5\"> --example\u003C/span>\u003Cspan style=\"color:#032F62\"> basic\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan style=\"color:#6F42C1\">cargo\u003C/span>\u003Cspan style=\"color:#032F62\"> run\u003C/span>\u003Cspan style=\"color:#005CC5\"> -p\u003C/span>\u003Cspan style=\"color:#032F62\"> ground_vehicle\u003C/span>\u003Cspan style=\"color:#005CC5\"> --example\u003C/span>\u003Cspan style=\"color:#032F62\"> drift_tuning\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan style=\"color:#6F42C1\">cargo\u003C/span>\u003Cspan style=\"color:#032F62\"> run\u003C/span>\u003Cspan style=\"color:#005CC5\"> -p\u003C/span>\u003Cspan style=\"color:#032F62\"> ground_vehicle\u003C/span>\u003Cspan style=\"color:#005CC5\"> --example\u003C/span>\u003Cspan style=\"color:#032F62\"> multi_axle\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan style=\"color:#6F42C1\">cargo\u003C/span>\u003Cspan style=\"color:#032F62\"> run\u003C/span>\u003Cspan style=\"color:#005CC5\"> -p\u003C/span>\u003Cspan style=\"color:#032F62\"> ground_vehicle_lab\u003C/span>\u003Cspan style=\"color:#005CC5\"> --features\u003C/span>\u003Cspan style=\"color:#032F62\"> e2e\u003C/span>\u003Cspan style=\"color:#005CC5\"> --\u003C/span>\u003Cspan style=\"color:#032F62\"> ground_vehicle_smoke\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan style=\"color:#6F42C1\">cargo\u003C/span>\u003Cspan style=\"color:#032F62\"> run\u003C/span>\u003Cspan style=\"color:#005CC5\"> -p\u003C/span>\u003Cspan style=\"color:#032F62\"> ground_vehicle_lab\u003C/span>\u003Cspan style=\"color:#005CC5\"> --features\u003C/span>\u003Cspan style=\"color:#032F62\"> e2e\u003C/span>\u003Cspan style=\"color:#005CC5\"> --\u003C/span>\u003Cspan style=\"color:#032F62\"> ground_vehicle_drift\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan style=\"color:#6F42C1\">cargo\u003C/span>\u003Cspan style=\"color:#032F62\"> run\u003C/span>\u003Cspan style=\"color:#005CC5\"> -p\u003C/span>\u003Cspan style=\"color:#032F62\"> ground_vehicle_lab\u003C/span>\u003Cspan style=\"color:#005CC5\"> --features\u003C/span>\u003Cspan style=\"color:#032F62\"> e2e\u003C/span>\u003Cspan style=\"color:#005CC5\"> --\u003C/span>\u003Cspan style=\"color:#032F62\"> ground_vehicle_skid_steer\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan style=\"color:#6F42C1\">cargo\u003C/span>\u003Cspan style=\"color:#032F62\"> run\u003C/span>\u003Cspan style=\"color:#005CC5\"> -p\u003C/span>\u003Cspan style=\"color:#032F62\"> ground_vehicle_lab\u003C/span>\u003Cspan style=\"color:#005CC5\"> --features\u003C/span>\u003Cspan style=\"color:#032F62\"> e2e\u003C/span>\u003Cspan style=\"color:#005CC5\"> --\u003C/span>\u003Cspan style=\"color:#032F62\"> ground_vehicle_slope\u003C/span>\u003C/span>\u003C/code>\u003C/pre>\u003C/div>\n\t\t\t\t\t\u003Cdiv class=\"shiki-theme-dark\">\u003Cpre class=\"shiki github-dark\" style=\"background-color:#24292e;color:#e1e4e8\" tabindex=\"0\">\u003Ccode>\u003Cspan class=\"line\">\u003Cspan style=\"color:#B392F0\">cargo\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> run\u003C/span>\u003Cspan style=\"color:#79B8FF\"> -p\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> ground_vehicle\u003C/span>\u003Cspan style=\"color:#79B8FF\"> --example\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> basic\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan style=\"color:#B392F0\">cargo\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> run\u003C/span>\u003Cspan style=\"color:#79B8FF\"> -p\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> ground_vehicle\u003C/span>\u003Cspan style=\"color:#79B8FF\"> --example\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> drift_tuning\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan style=\"color:#B392F0\">cargo\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> run\u003C/span>\u003Cspan style=\"color:#79B8FF\"> -p\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> ground_vehicle\u003C/span>\u003Cspan style=\"color:#79B8FF\"> --example\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> multi_axle\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan style=\"color:#B392F0\">cargo\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> run\u003C/span>\u003Cspan style=\"color:#79B8FF\"> -p\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> ground_vehicle_lab\u003C/span>\u003Cspan style=\"color:#79B8FF\"> --features\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> e2e\u003C/span>\u003Cspan style=\"color:#79B8FF\"> --\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> ground_vehicle_smoke\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan style=\"color:#B392F0\">cargo\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> run\u003C/span>\u003Cspan style=\"color:#79B8FF\"> -p\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> ground_vehicle_lab\u003C/span>\u003Cspan style=\"color:#79B8FF\"> --features\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> e2e\u003C/span>\u003Cspan style=\"color:#79B8FF\"> --\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> ground_vehicle_drift\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan style=\"color:#B392F0\">cargo\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> run\u003C/span>\u003Cspan style=\"color:#79B8FF\"> -p\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> ground_vehicle_lab\u003C/span>\u003Cspan style=\"color:#79B8FF\"> --features\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> e2e\u003C/span>\u003Cspan style=\"color:#79B8FF\"> --\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> ground_vehicle_skid_steer\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan style=\"color:#B392F0\">cargo\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> run\u003C/span>\u003Cspan style=\"color:#79B8FF\"> -p\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> ground_vehicle_lab\u003C/span>\u003Cspan style=\"color:#79B8FF\"> --features\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> e2e\u003C/span>\u003Cspan style=\"color:#79B8FF\"> --\u003C/span>\u003Cspan style=\"color:#9ECBFF\"> ground_vehicle_slope\u003C/span>\u003C/span>\u003C/code>\u003C/pre>\u003C/div>\n\t\t\t\t\u003C/div>\u003Cp>Keep screenshots, telemetry, and BRP inspection in the loop instead of tuning only from feel.\u003C/p>\n",title:"Tuning",description:"Tuning documentation",rawMarkdown:"## Baseline Workflow\n\nTune vehicles in this order:\n\n1. Set mass, inertia, and center of mass.\n2. Set wheel placement and suspension travel.\n3. Make the vehicle settle at a plausible ride height.\n4. Tune drive and brake force.\n5. Tune lateral grip and steering.\n6. Add anti-roll, low-speed traction, yaw damping, and aero last.\n\nIf too many knobs seem to fight each other, return to a simple flat-pad test with:\n\n- one surface type\n- debug draw off\n- assists reduced\n- moderate speed\n- no handbrake\n\n## Light Vs Heavy Vehicles\n\n### Light road cars\n\nStart with:\n\n- lower `mass_kg`\n- moderate `angular_inertia_kgm2`\n- lower `anti_roll_force_n_per_ratio`\n- faster steering rate\n- lighter brake and drive budgets\n\nSymptoms of overdoing it:\n\n- too much snap rotation under steering lift\n- curb hits bounce the whole body upward\n- drift threshold triggers constantly\n\n### Heavy trucks and utility vehicles\n\nStart with:\n\n- higher `mass_kg`\n- substantially higher pitch and roll inertia\n- lower steer rate and max angle\n- stronger service brakes\n- more suspension travel or softer springs if off-road\n- stronger anti-roll only after ride height is stable\n\nSymptoms of under-support:\n\n- visible side-to-side rocking after every steering correction\n- inside wheels lifting on simple ramps\n- rear axles losing contact on gentle crests\n\n## Suspension\n\n### Ride height\n\nThe neutral parked stance is controlled by the relationship between:\n\n- chassis mass\n- wheel count and load distribution\n- `rest_length_m`\n- `spring_strength_n_per_m`\n\nIf the parked vehicle sits too low:\n\n- increase spring strength\n- increase rest length\n- reduce mass\n\nDo not fix every sagging issue with bump-stop strength. Bump stops are for the last part of travel, not the normal ride height.\n\n### Damping\n\n`damper_strength_n_per_mps` is the first knob to touch when the car oscillates.\n\n- Too low: repeated bobbing after landings or curb strikes\n- Too high: the vehicle feels like it sticks or punches down into terrain\n\n### Anti-roll\n\nUse `anti_roll_force_n_per_ratio` after the basic spring/damper pass is believable.\n\n- Too little anti-roll: lazy body roll, wheel lift on off-camber transitions\n- Too much anti-roll: diagonal wheel unloading and an unnaturally rigid stance\n\n## Steering\n\n### Road vehicles\n\nPrimary knobs:\n\n- `max_angle_rad`\n- `steer_rate_rad_per_sec`\n- `ackermann_ratio`\n- `minimum_speed_factor`\n\nGuidance:\n\n- Increase `max_angle_rad` for low-speed rotation and drift setups.\n- Reduce `steer_rate_rad_per_sec` for heavy trucks and high-speed stability.\n- Keep `ackermann_ratio` moderate if wheelbase or track width overrides are approximate rather than exact.\n\n### Skid steer\n\nUse:\n\n- `SteeringMode::SkidSteer`\n- left/right `drive_side`\n- `skid_steer_turn_scale`\n\nIf the vehicle pirouettes too aggressively, reduce `skid_steer_turn_scale` before weakening raw drive force.\n\n## Grip And Drift\n\n### Arcade-to-sim bias\n\nMore arcade:\n\n- higher low-speed traction boost\n- more airborne upright assist\n- lower lateral stiffness with a gentle exponent\n- stronger yaw damping\n\nMore sim-lite:\n\n- reduce assists\n- rely more on mass, load transfer, and tire grip\n- keep handbrake multipliers closer to realistic tire behavior\n\n### Drift tuning\n\nA drift-friendly setup usually needs:\n\n- RWD or rear-biased drive\n- more steering lock\n- lower rear `lateral_grip`\n- reduced `handbrake_lateral_multiplier`\n- lower rear `handbrake_longitudinal_multiplier`\n- lower or softer yaw damping so the chassis can rotate\n\nTypical progression:\n\n1. tune normal cornering first\n2. reduce rear lateral grip a little\n3. increase steering lock\n4. use handbrake multipliers to widen the breakaway window\n5. only then adjust drift state thresholds\n\nIf the car instantly spins instead of holding a drift:\n\n- rear lateral grip is probably too low\n- handbrake multiplier is probably too aggressive\n- or yaw damping is too weak for the speed range\n\n## Slopes And Utility Vehicles\n\nFor predictable low-speed hill behavior:\n\n- raise `park_hold_force_newtons`\n- keep `park_hold_speed_threshold_mps` low enough to avoid dragging while creeping\n- increase `low_speed_traction_boost` carefully\n- keep center of mass low\n\nIf the vehicle chatters while stopped on a slope:\n\n- reduce brake force slightly\n- reduce longitudinal stiffness\n- lower low-speed traction boost\n- check for overly stiff springs combined with short travel\n\n## Aero And Stability Assists\n\nAerodynamic drag should shape top speed and high-speed braking feel, not replace grip tuning.\n\n- If the vehicle refuses to coast, drag is too high.\n- If high-speed lane changes feel floaty, a small amount of downforce may help.\n- If a drift build stops rotating as speed rises, downforce may be masking the rear grip reduction.\n\nYaw damping is a finishing pass:\n\n- raise it when the vehicle oscillates after turn-in\n- lower it when the vehicle refuses to rotate under deliberate input\n\n## Common Tuning Patterns\n\n### Hatchback baseline\n\n- moderate steer lock\n- mild Ackermann\n- moderate front/rear lateral grip\n- mild anti-roll\n- little or no downforce\n\n### Drift coupe\n\n- more steering lock\n- rear drive bias\n- reduced rear lateral grip\n- strong handbrake rear multiplier reduction\n- lighter yaw damping\n\n### Cargo truck\n\n- more mass and inertia\n- slow steering\n- stronger brakes\n- more anti-roll after springs are stable\n- moderate aero drag, little downforce\n\n### Rover or hill-climber\n\n- low top speed\n- strong hill hold\n- generous low-speed traction support\n- lower center of mass\n- large wheel radius and longer suspension travel\n\n## Verification Loop\n\nUse the examples and lab as a repeatable tuning harness:\n\n```bash\ncargo run -p ground_vehicle --example basic\ncargo run -p ground_vehicle --example drift_tuning\ncargo run -p ground_vehicle --example multi_axle\ncargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_smoke\ncargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_drift\ncargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_skid_steer\ncargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_slope\n```\n\nKeep screenshots, telemetry, and BRP inspection in the loop instead of tuning only from feel.\n",slug:"tuning"},uses:{params:["slug"]}}],
+							form: null,
+							error: null
+						});
+					});
+				}
+			</script>
+		</div>
+	</body>
+</html>
