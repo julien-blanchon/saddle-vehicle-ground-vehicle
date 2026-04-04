@@ -19,8 +19,9 @@ pub use components::{
     WheelSide,
 };
 pub use config::{
-    AerodynamicsConfig, DifferentialMode, DrivetrainConfig, ReversePolicy, StabilityConfig,
-    SteeringConfig, SteeringMode, SuspensionConfig, TireGripConfig,
+    AerodynamicsConfig, DifferentialConfig, DifferentialMode, DrivetrainConfig, EngineConfig,
+    MagicFormulaConfig, ReversePolicy, StabilityConfig, SteeringConfig, SteeringMode,
+    SuspensionConfig, TireGripConfig, TireModel, TransmissionConfig,
 };
 pub use messages::{DriftStateChanged, VehicleBecameAirborne, VehicleLanded, WheelGroundedChanged};
 
@@ -91,8 +92,10 @@ impl Plugin for GroundVehiclePlugin {
             .add_message::<VehicleLanded>()
             .add_message::<DriftStateChanged>()
             .register_type::<AerodynamicsConfig>()
+            .register_type::<DifferentialConfig>()
             .register_type::<DifferentialMode>()
             .register_type::<DrivetrainConfig>()
+            .register_type::<EngineConfig>()
             .register_type::<GroundVehicle>()
             .register_type::<GroundVehicleControl>()
             .register_type::<GroundVehicleDebugDraw>()
@@ -101,12 +104,15 @@ impl Plugin for GroundVehiclePlugin {
             .register_type::<GroundVehicleWheel>()
             .register_type::<GroundVehicleWheelState>()
             .register_type::<GroundVehicleWheelVisual>()
+            .register_type::<MagicFormulaConfig>()
             .register_type::<ReversePolicy>()
             .register_type::<SteeringConfig>()
             .register_type::<SteeringMode>()
             .register_type::<StabilityConfig>()
             .register_type::<SuspensionConfig>()
             .register_type::<TireGripConfig>()
+            .register_type::<TireModel>()
+            .register_type::<TransmissionConfig>()
             .register_type::<WheelSide>()
             .add_systems(self.activate_schedule, systems::activate_runtime)
             .add_systems(self.deactivate_schedule, systems::deactivate_runtime)
@@ -138,7 +144,11 @@ impl Plugin for GroundVehiclePlugin {
                         .chain()
                         .in_set(GroundVehicleSystems::Suspension),
                     steering::update_steering_angles.in_set(GroundVehicleSystems::Steering),
-                    drivetrain::resolve_wheel_force_requests
+                    (
+                        drivetrain::update_drivetrain_state,
+                        drivetrain::resolve_wheel_force_requests,
+                    )
+                        .chain()
                         .in_set(GroundVehicleSystems::Drivetrain),
                     grip::apply_tire_forces.in_set(GroundVehicleSystems::Grip),
                     (
@@ -177,3 +187,11 @@ impl Plugin for GroundVehiclePlugin {
 #[cfg(test)]
 #[path = "systems_tests.rs"]
 mod systems_tests;
+
+#[cfg(test)]
+#[path = "drivetrain_tests.rs"]
+mod drivetrain_tests;
+
+#[cfg(test)]
+#[path = "grip_tests.rs"]
+mod grip_tests;

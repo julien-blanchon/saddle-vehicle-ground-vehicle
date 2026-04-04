@@ -1,6 +1,6 @@
 use crate::{
     GroundVehicle, GroundVehicleResolvedControl, GroundVehicleSurface, GroundVehicleWheel,
-    GroundVehicleWheelInternal, GroundVehicleWheelState,
+    GroundVehicleWheelInternal, GroundVehicleWheelState, TireModel,
 };
 use avian3d::prelude::*;
 use bevy::prelude::*;
@@ -16,10 +16,10 @@ pub(crate) fn surface_for_contact(
     if let Ok(surface) = surfaces.get(entity) {
         return *surface;
     }
-    if let Ok(owner) = collider_of.get(entity) {
-        if let Ok(surface) = surfaces.get(owner.body) {
-            return *surface;
-        }
+    if let Ok(owner) = collider_of.get(entity)
+        && let Ok(surface) = surfaces.get(owner.body)
+    {
+        return *surface;
     }
     GroundVehicleSurface::default()
 }
@@ -64,6 +64,14 @@ pub(crate) fn friction_circle_scale(
     }
 }
 
+pub(crate) fn magic_formula_response(x: f32, b: f32, c: f32, e: f32) -> f32 {
+    let x = x.clamp(-4.0, 4.0);
+    let bx = b.max(0.01) * x.abs();
+    let atan_bx = bx.atan();
+    let value = (c.max(0.1) * (bx - e.clamp(-1.0, 1.0) * (bx - atan_bx)).atan()).sin();
+    value.copysign(x)
+}
+
 pub(crate) fn apply_tire_forces(
     time: Res<Time>,
     mut wheels: Query<(
@@ -87,9 +95,29 @@ pub(crate) fn apply_tire_forces(
             continue;
         };
 
+        let drive_torque_nm = wheel_internal.drive_force_request_newtons * wheel.radius_m;
+        let brake_direction = if state.spin_speed_rad_per_sec.abs() > 0.1 {
+            -state.spin_speed_rad_per_sec.signum()
+        } else if state.longitudinal_speed_mps.abs() > 0.1 {
+            -state.longitudinal_speed_mps.signum()
+        } else {
+            0.0
+        };
+        let brake_torque_nm =
+            wheel_internal.brake_force_request_newtons.abs() * wheel.radius_m * brake_direction;
+        let rolling_drag_torque_nm = -state.spin_speed_rad_per_sec.signum()
+            * wheel.tire.rolling_resistance_force_newtons
+            * wheel.radius_m;
+        let rotational_inertia = wheel.rotational_inertia_kgm2.max(0.05);
+
         if !state.grounded {
-            state.spin_speed_rad_per_sec *= 0.96;
+            state.spin_speed_rad_per_sec +=
+                (drive_torque_nm + brake_torque_nm + rolling_drag_torque_nm) / rotational_inertia
+                    * dt;
+            state.spin_speed_rad_per_sec *= 0.995;
             state.spin_angle_rad += state.spin_speed_rad_per_sec * dt;
+            state.slip_ratio = 0.0;
+            state.slip_angle_rad = 0.0;
             continue;
         }
 
@@ -153,21 +181,73 @@ pub(crate) fn apply_tire_forces(
         } * (1.0
             + (wheel.tire.handbrake_lateral_multiplier - 1.0) * handbrake_amount);
 
+        let predicted_spin_speed = state.spin_speed_rad_per_sec
+            + (drive_torque_nm + brake_torque_nm + rolling_drag_torque_nm) / rotational_inertia
+                * dt;
+        let wheel_surface_speed_mps = predicted_spin_speed * wheel.radius_m;
+        let slip_reference = longitudinal_speed_mps
+            .abs()
+            .max(wheel_surface_speed_mps.abs())
+            .max(wheel.tire.low_speed_slip_reference_mps.max(0.5));
+        let slip_ratio = (wheel_surface_speed_mps - longitudinal_speed_mps) / slip_reference;
+        let slip_angle_rad =
+            lateral_speed_mps.atan2(longitudinal_speed_mps.abs().max(slip_reference * 0.5));
+
         let passive_longitudinal = -longitudinal_speed_mps
             * wheel.tire.longitudinal_stiffness
             * surface.rolling_drag_scale;
         let rolling_resistance = -longitudinal_speed_mps.signum()
             * wheel.tire.rolling_resistance_force_newtons
             * surface.rolling_drag_scale;
-        let raw_longitudinal_force = wheel_internal.drive_force_request_newtons
-            + wheel_internal.brake_force_request_newtons * surface.brake_scale
-            + passive_longitudinal
-            + rolling_resistance;
-        let raw_lateral_force = -lateral_speed_mps.signum()
-            * wheel.tire.lateral_stiffness
-            * lateral_speed_mps
-                .abs()
-                .powf(wheel.tire.lateral_response_exponent.max(0.5));
+
+        let raw_longitudinal_force = match wheel.tire.model {
+            TireModel::Linear => {
+                wheel_internal.drive_force_request_newtons
+                    + wheel_internal.brake_force_request_newtons * surface.brake_scale
+                    + passive_longitudinal
+                    + rolling_resistance
+            }
+            TireModel::MagicFormula => {
+                let normalized_slip = slip_ratio
+                    / wheel
+                        .tire
+                        .magic_formula
+                        .longitudinal_peak_slip_ratio
+                        .max(0.01);
+                longitudinal_limit
+                    * magic_formula_response(
+                        normalized_slip,
+                        wheel.tire.magic_formula.longitudinal_b,
+                        wheel.tire.magic_formula.longitudinal_c,
+                        wheel.tire.magic_formula.longitudinal_e,
+                    )
+                    + rolling_resistance
+            }
+        };
+        let raw_lateral_force = match wheel.tire.model {
+            TireModel::Linear => {
+                -lateral_speed_mps.signum()
+                    * wheel.tire.lateral_stiffness
+                    * lateral_speed_mps
+                        .abs()
+                        .powf(wheel.tire.lateral_response_exponent.max(0.5))
+            }
+            TireModel::MagicFormula => {
+                let normalized_angle = slip_angle_rad
+                    / wheel
+                        .tire
+                        .magic_formula
+                        .lateral_peak_slip_angle_rad
+                        .max(1.0_f32.to_radians());
+                -lateral_limit
+                    * magic_formula_response(
+                        normalized_angle,
+                        wheel.tire.magic_formula.lateral_b,
+                        wheel.tire.magic_formula.lateral_c,
+                        wheel.tire.magic_formula.lateral_e,
+                    )
+            }
+        };
 
         let scale = friction_circle_scale(
             raw_longitudinal_force,
@@ -182,11 +262,21 @@ pub(crate) fn apply_tire_forces(
             wheel_forward * longitudinal_force_newtons + wheel_right * lateral_force_newtons;
         forces.apply_force_at_point(total_force, state.contact_point);
 
+        let patch_torque_nm = longitudinal_force_newtons * wheel.radius_m;
+        state.spin_speed_rad_per_sec +=
+            (drive_torque_nm + brake_torque_nm + rolling_drag_torque_nm - patch_torque_nm)
+                / rotational_inertia
+                * dt;
+        if state.spin_speed_rad_per_sec.abs() < 0.01 && longitudinal_speed_mps.abs() < 0.1 {
+            state.spin_speed_rad_per_sec = 0.0;
+        }
+
         state.longitudinal_speed_mps = longitudinal_speed_mps;
         state.lateral_speed_mps = lateral_speed_mps;
         state.longitudinal_force_newtons = longitudinal_force_newtons;
         state.lateral_force_newtons = lateral_force_newtons;
-        state.spin_speed_rad_per_sec = longitudinal_speed_mps / wheel.radius_m.max(0.01);
+        state.slip_ratio = slip_ratio;
+        state.slip_angle_rad = slip_angle_rad;
         state.spin_angle_rad += state.spin_speed_rad_per_sec * dt;
     }
 }

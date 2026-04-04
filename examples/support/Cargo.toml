@@ -7,8 +7,12 @@ publish = false
 [dependencies]
 bevy = { workspace = true }
 avian3d = { workspace = true }
+bevy_flair = { workspace = true }
 bevy_enhanced_input = { workspace = true }
+bevy_input_focus = { workspace = true }
+bevy_ui_widgets = { workspace = true }
 ground_vehicle = { workspace = true }
+saddle-pane = { workspace = true }
 
 [lints]
 workspace = true

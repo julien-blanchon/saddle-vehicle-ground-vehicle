@@ -59,6 +59,7 @@ GroundVehicleControl
   -> cast each wheel suspension probe
   -> accumulate chassis support loads
   -> resolve steering angles
+  -> estimate engine RPM and selected gear from driven-wheel speed
   -> resolve per-wheel drive and brake requests
   -> compute contact-patch longitudinal and lateral forces
   -> apply anti-roll / hill-hold / yaw / airborne assists
@@ -119,7 +120,9 @@ Steering is separated from torque delivery:
 
 - `SteeringConfig` owns steering mode, max angle, rate limit, Ackermann blend, and speed reduction
 - Ackermann geometry comes from explicit overrides when provided and otherwise falls back to the wheel layout on the chassis
-- `DrivetrainConfig` owns force budget, braking, reverse rules, and gameplay-friendly differential behavior
+- `DrivetrainConfig` owns the nested `EngineConfig`, `TransmissionConfig`, `DifferentialConfig`, brake forces, reverse rules, and drivetrain efficiency
+- `update_drivetrain_state` estimates engine RPM from driven wheel speed, blends that with a free-rev target, then selects an automatic gear before wheel torque is distributed
+- `resolve_wheel_force_requests` turns engine torque into wheel force through the selected gear, final drive, efficiency, and differential split
 
 Skid steer is not faked by steering wheel angles. It resolves left/right drive demand separately and leaves steer angles at zero.
 
@@ -127,12 +130,14 @@ Skid steer is not faked by steering wheel angles. It resolves left/right drive d
 
 The tire model is intentionally game-ready rather than study-level:
 
+- per-wheel angular inertia and slip-ratio estimation
 - separate longitudinal and lateral stiffness
 - separate grip limits
 - simple load-sensitivity scaling
 - friction-circle clamp so combined force stays sane
 - low-speed traction helper
 - explicit handbrake multipliers for drift-oriented setups
+- optional Magic Formula response curves for both longitudinal and lateral force shaping
 - optional `GroundVehicleSurface` multipliers from the contacted entity or its rigid-body owner
 
 This gives a stable tuning surface for arcade-to-sim-lite handling without pretending to be a full tire research model.
@@ -154,7 +159,7 @@ All of these are opt-in or tunable through config instead of hardcoded behavior.
 The main runtime outputs are:
 
 - `GroundVehicleWheelState` per wheel
-- `GroundVehicleTelemetry` per chassis
+- `GroundVehicleTelemetry` per chassis, including engine RPM and selected gear
 - messages for wheel grounded transitions, airborne state, landings, and drift state changes
 
 Those surfaces are intended for UI, VFX, audio, telemetry overlays, BRP inspection, and E2E assertions.

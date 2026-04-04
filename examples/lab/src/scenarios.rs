@@ -17,6 +17,7 @@ pub fn scenario_by_name(name: &str) -> Option<Scenario> {
     match name {
         "ground_vehicle_smoke" => Some(build_smoke()),
         "ground_vehicle_braking" => Some(build_braking()),
+        "ground_vehicle_drivetrain" => Some(build_drivetrain()),
         "ground_vehicle_slope" => Some(build_slope()),
         "ground_vehicle_drift" => Some(build_drift()),
         "ground_vehicle_skid_steer" => Some(build_skid_steer()),
@@ -29,6 +30,7 @@ pub fn list_scenarios() -> Vec<&'static str> {
     vec![
         "ground_vehicle_smoke",
         "ground_vehicle_braking",
+        "ground_vehicle_drivetrain",
         "ground_vehicle_slope",
         "ground_vehicle_drift",
         "ground_vehicle_skid_steer",
@@ -181,6 +183,83 @@ fn build_braking() -> Scenario {
             "ground_vehicle_braking_telemetry",
         ))
         .then(assertions::log_summary("ground_vehicle_braking summary"))
+        .build()
+}
+
+fn build_drivetrain() -> Scenario {
+    Scenario::builder("ground_vehicle_drivetrain")
+        .description(
+            "Verify the compact car upshifts under load and reports engine RPM through telemetry.",
+        )
+        .then(Action::Custom(Box::new(|world: &mut World| {
+            set_active_vehicle(world, ActiveVehicle::Compact);
+            let car = world.resource::<LabState>().compact;
+            reset_vehicle(world, car, Transform::from_xyz(0.0, 1.25, 54.0), Vec3::ZERO);
+            set_control(
+                world,
+                car,
+                GroundVehicleControl {
+                    throttle: 1.0,
+                    ..default()
+                },
+            );
+        })))
+        .then(Action::WaitFrames(30))
+        .then(Action::Screenshot(
+            "ground_vehicle_drivetrain_launch".into(),
+        ))
+        .then(Action::WaitFrames(1))
+        .then(Action::WaitUntil {
+            label: "compact car upshifted".into(),
+            condition: Box::new(|world| {
+                let car = world.resource::<LabState>().compact;
+                world
+                    .get::<GroundVehicleTelemetry>(car)
+                    .is_some_and(|telemetry| {
+                        telemetry.selected_gear >= 2
+                            && telemetry.engine_rpm > 2_500.0
+                            && telemetry.speed_mps > 1.0
+                    })
+            }),
+            max_frames: 260,
+        })
+        .then(assertions::custom(
+            "compact car reported higher gear",
+            |world| {
+                let car = world.resource::<LabState>().compact;
+                world
+                    .get::<GroundVehicleTelemetry>(car)
+                    .is_some_and(|telemetry| telemetry.selected_gear >= 2)
+            },
+        ))
+        .then(assertions::custom(
+            "compact car reported engine rpm",
+            |world| {
+                let car = world.resource::<LabState>().compact;
+                world
+                    .get::<GroundVehicleTelemetry>(car)
+                    .is_some_and(|telemetry| {
+                        telemetry.engine_rpm > 2_500.0 && telemetry.engine_rpm < 6_800.0
+                    })
+            },
+        ))
+        .then(assertions::custom(
+            "compact car stayed planted while shifting",
+            |world| {
+                let car = world.resource::<LabState>().compact;
+                world
+                    .get::<GroundVehicleTelemetry>(car)
+                    .is_some_and(|telemetry| telemetry.grounded_wheels >= 4 && !telemetry.airborne)
+            },
+        ))
+        .then(Action::Screenshot(
+            "ground_vehicle_drivetrain_shifted".into(),
+        ))
+        .then(Action::WaitFrames(1))
+        .then(inspect::log_component::<GroundVehicleTelemetry>(
+            "ground_vehicle_drivetrain_telemetry",
+        ))
+        .then(assertions::log_summary("ground_vehicle_drivetrain summary"))
         .build()
 }
 

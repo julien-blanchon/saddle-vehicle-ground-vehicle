@@ -43,6 +43,7 @@ Defaults below refer to each type's `Default` implementation unless noted otherw
 | `mount_point` | `Vec3` | m | helper-specific | finite | Suspension origin in chassis-local space | Wrong height causes clipping or airborne wheels |
 | `radius_m` | `f32` | m | `0.36` | `> 0` | Wheel radius for casts and spin | Too small sinks into terrain; too large hovers |
 | `width_m` | `f32` | m | `0.24` or `0.26` | `> 0` | Authoring/debug width; useful for visuals | Visual mismatch if not kept close to the mesh |
+| `rotational_inertia_kgm2` | `f32` | kg m^2 | helper-specific | `> 0` | Wheel angular inertia used by slip-ratio and torque response | Too low snaps instantly into wheelspin or lock-up |
 | `steer_factor` | `f32` | scale | helper-specific | `0..=1` typical | How much of the steering angle this wheel receives | Unexpected four-wheel steer or dead front axle |
 | `drive_factor` | `f32` | weight | helper-specific | `>= 0` | Torque-share weight | Torque missing from intended driven axle |
 | `brake_factor` | `f32` | weight | `1.0` | `>= 0` | Service-brake share | Vehicle pulls under braking if side-to-side mismatch exists |
@@ -79,15 +80,46 @@ Defaults below refer to each type's `Default` implementation unless noted otherw
 
 | Field | Type | Unit | Default | Practical range | Effect | Common failure when mis-tuned |
 | --- | --- | --- | --- | --- | --- | --- |
-| `differential` | `DifferentialMode` | n/a | `LimitedSlip` | open / limited-slip / spool | Chooses torque split behavior | Open diff can unload badly off-road; spool can bind on road |
+| `engine` | `EngineConfig` | n/a | default | see below | Torque curve and engine-braking behavior | Wrong torque curve makes every gear feel flat |
+| `transmission` | `TransmissionConfig` | n/a | default | see below | Gear ratios, automatic shift points, and coupling | Bad gearing makes launch or cruise unusable |
+| `differential` | `DifferentialConfig` | n/a | default | see below | Chooses torque split behavior | Open diff can unload badly off-road; spool can bind on road |
 | `reverse_policy` | `ReversePolicy` | n/a | `StopThenReverse` | immediate / stop-then-reverse | Resolves ambiguous reverse input | Wrong policy feels sticky or too arcade-like |
-| `max_drive_force_newtons` | `f32` | N | `9500.0` | `>= 0` | Forward traction budget | Too high overwhelms tires and creates snap oversteer |
-| `max_reverse_force_newtons` | `f32` | N | `5800.0` | `>= 0` | Reverse traction budget | Too low prevents hill climbs in reverse |
+| `drivetrain_efficiency` | `f32` | ratio | `0.88` | `0..=1` typical | Multiplies delivered wheel torque after gearing | Too low feels sluggish; too high exaggerates torque everywhere |
 | `brake_force_newtons` | `f32` | N | `12000.0` | `>= 0` | Service-brake force budget | Too high causes instant lock and jitter |
 | `handbrake_force_newtons` | `f32` | N | `10500.0` | `>= 0` | Handbrake force budget | Too low never initiates rotation; too high freezes the rear axle |
-| `engine_brake_force_newtons` | `f32` | N | `2200.0` | `>= 0` | Passive drag when throttle is near zero | Too high makes coasting impossible |
 | `reverse_speed_threshold_mps` | `f32` | m/s | `1.25` | `>= 0` | Stop-then-reverse threshold | Too large blocks deliberate reversing |
-| `limited_slip_load_bias` | `f32` | ratio | `0.55` | `0..=1` | Blend between authoring share and load share | Too high makes limited-slip behave like a spool |
+
+## `EngineConfig`
+
+| Field | Type | Unit | Default | Practical range | Effect | Common failure when mis-tuned |
+| --- | --- | --- | --- | --- | --- | --- |
+| `idle_rpm` | `f32` | rpm | `900.0` | `> 0` | Lower clamp for the engine speed estimate | Too low stalls the authored torque curve shape |
+| `peak_torque_nm` | `f32` | Nm | `420.0` | `>= 0` | Peak torque value used by the curve | Too high overwhelms tire grip in lower gears |
+| `peak_torque_rpm` | `f32` | rpm | `4200.0` | between idle and redline | Where the torque curve reaches peak output | Too low makes engines feel diesel-like unintentionally |
+| `redline_rpm` | `f32` | rpm | `6800.0` | `> idle_rpm` | Upper clamp for engine speed and torque falloff | Too low forces frantic shifting |
+| `idle_torque_fraction` | `f32` | ratio | `0.42` | `>= 0` | Fraction of peak torque available near idle | Too low makes launches bog; too high makes idle overpowering |
+| `redline_torque_fraction` | `f32` | ratio | `0.62` | `>= 0` | Fraction of peak torque remaining at redline | Too high removes the incentive to upshift |
+| `engine_brake_torque_nm` | `f32` | Nm | `110.0` | `>= 0` | Passive driveline drag when off throttle | Too high makes coasting impossible |
+
+## `TransmissionConfig`
+
+| Field | Type | Unit | Default | Practical range | Effect | Common failure when mis-tuned |
+| --- | --- | --- | --- | --- | --- | --- |
+| `automatic` | `bool` | n/a | `true` | `true` or `false` | Enables automatic gear selection | `false` without external gear control leaves the vehicle in first |
+| `forward_gears` | `[f32; 6]` | ratio | `[3.45, 2.25, 1.62, 1.22, 0.98, 0.84]` | each `>= 0` | Forward gear ratios before final drive | Big ratio jumps create awkward acceleration holes |
+| `forward_gear_count` | `u8` | count | `5` | `1..=6` | Active number of usable forward gears | Wrong count hides intended higher gears |
+| `final_drive_ratio` | `f32` | ratio | `3.85` | `> 0` | Global multiplier applied to all gears | Too high shortens every gear; too low kills launch |
+| `reverse_ratio` | `f32` | ratio | `3.10` | `> 0` | Reverse gear ratio before final drive | Too low makes reverse useless on grades |
+| `shift_up_rpm` | `f32` | rpm | `5900.0` | between idle and redline | Automatic upshift threshold | Too low short-shifts; too high bounces off redline |
+| `shift_down_rpm` | `f32` | rpm | `2600.0` | below `shift_up_rpm` | Automatic downshift threshold | Too high gear-hunts; too low lugs the engine |
+| `clutch_coupling_speed_mps` | `f32` | m/s | `4.0` | `> 0` | How quickly wheel speed dominates the free-rev target | Too high makes launches feel disconnected |
+
+## `DifferentialConfig`
+
+| Field | Type | Unit | Default | Practical range | Effect | Common failure when mis-tuned |
+| --- | --- | --- | --- | --- | --- | --- |
+| `mode` | `DifferentialMode` | n/a | `LimitedSlip` | open / limited-slip / spool | Chooses torque split behavior | Wrong mode makes turn-in or traction recovery feel wrong |
+| `limited_slip_load_bias` | `f32` | ratio | `0.55` | `0..=1` | Blend between authored drive-factor share and load-based share | Too high makes limited-slip behave like a spool |
 
 ## `SuspensionConfig`
 
@@ -104,6 +136,7 @@ Defaults below refer to each type's `Default` implementation unless noted otherw
 
 | Field | Type | Unit | Default | Practical range | Effect | Common failure when mis-tuned |
 | --- | --- | --- | --- | --- | --- | --- |
+| `model` | `TireModel` | n/a | `Linear` | `Linear` or `MagicFormula` | Selects the tire-force response model | Wrong choice hides the intended breakaway feel |
 | `longitudinal_grip` | `f32` | ratio | `1.35` | `>= 0` | Longitudinal grip limit relative to wheel load | Too low gives endless wheelspin |
 | `lateral_grip` | `f32` | ratio | `1.15` | `>= 0` | Lateral grip limit relative to wheel load | Too high resists drift and curb recovery feels snappy |
 | `longitudinal_stiffness` | `f32` | N per m/s-ish | `170.0` | `>= 0` | Passive correction along wheel forward | Too high jitters at low speed |
@@ -115,6 +148,21 @@ Defaults below refer to each type's `Default` implementation unless noted otherw
 | `low_speed_lateral_multiplier` | `f32` | ratio | `1.35` | `>= 1` typical | Extra lateral grip near stop | Too high causes parking-lot snapback |
 | `nominal_load_newtons` | `f32` | N | `3500.0` | `> 0` | Reference load for sensitivity scaling | Wrong reference makes trucks and light cars feel similar |
 | `load_sensitivity` | `f32` | exponent | `0.45` | `0..=1` | How strongly grip changes with load | Too high amplifies load transfer into sudden handling swings |
+| `low_speed_slip_reference_mps` | `f32` | m/s | `2.5` | `> 0` | Slip-speed floor used by the low-speed slip-ratio estimate | Too low spikes slip ratio near standstill |
+| `magic_formula` | `MagicFormulaConfig` | n/a | default | see below | Shape parameters used when `model = MagicFormula` | Mismatched B/C/E values create impossible snap or mushy tires |
+
+## `MagicFormulaConfig`
+
+| Field | Type | Unit | Default | Practical range | Effect | Common failure when mis-tuned |
+| --- | --- | --- | --- | --- | --- | --- |
+| `longitudinal_b` | `f32` | curve factor | `10.5` | `> 0` | Longitudinal slip stiffness factor | Too high makes throttle breakaway abrupt |
+| `longitudinal_c` | `f32` | curve factor | `1.72` | `> 0` | Longitudinal curve shape factor | Too low flattens the peak excessively |
+| `longitudinal_e` | `f32` | curve factor | `0.32` | practical `0..=1` | Longitudinal peak/shoulder curvature | Too high makes the force peak too late |
+| `longitudinal_peak_slip_ratio` | `f32` | ratio | `0.12` | `> 0` | Slip-ratio normalization for the longitudinal curve | Too small saturates instantly |
+| `lateral_b` | `f32` | curve factor | `7.8` | `> 0` | Lateral slip stiffness factor | Too high makes small steering corrections too sharp |
+| `lateral_c` | `f32` | curve factor | `1.38` | `> 0` | Lateral curve shape factor | Too low weakens the shoulder and progression |
+| `lateral_e` | `f32` | curve factor | `0.24` | practical `0..=1` | Lateral peak/shoulder curvature | Too high gives an exaggerated cliff after peak grip |
+| `lateral_peak_slip_angle_rad` | `f32` | rad | `0.1745` | `> 0` | Slip-angle normalization for the lateral curve | Too small makes normal cornering look like a full slide |
 
 ## `StabilityConfig`
 

@@ -9,13 +9,13 @@ The crate is intended for game-ready cars, trucks, utility vehicles, and skid-st
 ```toml
 [dependencies]
 bevy = "0.18"
-ground_vehicle = { path = "shared/vehicle/ground_vehicle" }
+saddle-vehicle-ground-vehicle = { git = "https://github.com/julien-blanchon/saddle-vehicle-ground-vehicle" }
 ```
 
 ```rust,no_run
 use avian3d::prelude::*;
 use bevy::prelude::*;
-use ground_vehicle::{
+use saddle_vehicle_ground_vehicle::{
     GroundVehicle, GroundVehiclePlugin, GroundVehicleWheel, GroundVehicleWheelVisual, WheelSide,
 };
 
@@ -105,10 +105,10 @@ For examples and crate-local labs, `GroundVehiclePlugin::default()` is the alway
 | `GroundVehicleWheel` | Wheel authoring data: location, axle, drive/steer/brake role, suspension, tire |
 | `GroundVehicleWheelVisual` | Binding from wheel runtime state to a visible mesh entity |
 | `GroundVehicleWheelState` | Per-wheel runtime contact, load, slip, force, steer, and spin state |
-| `GroundVehicleTelemetry` | Chassis-level runtime speed, drift, grounded-wheel, and normal aggregation |
+| `GroundVehicleTelemetry` | Chassis-level runtime speed, drift, grounded-wheel, normal, engine RPM, and selected-gear aggregation |
 | `GroundVehicleSurface` | Optional surface multipliers for grip, rolling drag, and braking |
 | `GroundVehicleDebugDraw` | Runtime gizmo toggles for suspension, contact, force, and slip vectors |
-| `SteeringConfig`, `DrivetrainConfig`, `SuspensionConfig`, `TireGripConfig`, `StabilityConfig`, `AerodynamicsConfig` | Tunable sub-configs used by authored chassis and wheel data |
+| `SteeringConfig`, `DrivetrainConfig`, `EngineConfig`, `TransmissionConfig`, `DifferentialConfig`, `SuspensionConfig`, `TireGripConfig`, `MagicFormulaConfig`, `StabilityConfig`, `AerodynamicsConfig` | Tunable sub-configs used by authored chassis and wheel data |
 | `WheelGroundedChanged`, `VehicleBecameAirborne`, `VehicleLanded`, `DriftStateChanged` | Optional cross-crate messages for gameplay reactions, UI, VFX, or tuning tools |
 
 The crate intentionally does not expose internal solver scratch state, axle accumulators, or force-request bookkeeping.
@@ -116,46 +116,51 @@ The crate intentionally does not expose internal solver scratch state, axle accu
 ## Supported Vehicle Styles
 
 - Four-wheel road vehicles with Ackermann steering
-- Rear-biased drift cars through tire config and handbrake shaping
+- Rear-biased drift cars through handbrake shaping plus linear or Magic Formula tire response
 - Long-travel off-road and utility vehicles
 - Multi-axle cargo trucks
 - Left/right skid-steer or tracked-style vehicles with differential turning
+- Automatic gearbox setups with authored torque curves, shift points, and final-drive ratios
 
 ## What The Crate Does Not Do
 
-- Gearbox, clutch, RPM, or engine-audio simulation
-- Tire temperature, wear, or detailed brush/Pacejka tire models
+- Full clutch simulation, engine-audio playback, or drivetrain damage
+- Tire temperature, wear, and full motorsport-grade multi-point tire fitting
 - Full tread simulation for tracks
 - Camera rigs, HUD, replay, or networking
 - Damage, deformation, or mission-specific gameplay rules
 
 ## Examples
 
+All example apps include live `saddle-pane` tuning so steering, drivetrain, grip, debug draw, and chase-camera settings can be adjusted at runtime.
+
 | Example | Purpose | Run |
 | --- | --- | --- |
-| `basic` | Minimal four-wheel hatchback on a flat handling pad | `cargo run -p ground_vehicle --example basic` |
-| `multi_axle` | Six-wheel truck across bumps and uneven support | `cargo run -p ground_vehicle --example multi_axle` |
-| `drift_tuning` | Rear-biased drift coupe with handbrake-friendly lateral grip shaping | `cargo run -p ground_vehicle --example drift_tuning` |
-| `skid_steer` | Left/right drive-group steering for tank-like or tracked-style control | `cargo run -p ground_vehicle --example skid_steer` |
-| `slope_stability` | Hill hold, anti-roll, and low-speed traction on ramps and off-camber surfaces | `cargo run -p ground_vehicle --example slope_stability` |
+| `basic` | Minimal four-wheel hatchback on a flat handling pad | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_basic` |
+| `multi_axle` | Six-wheel truck across bumps and uneven support | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_multi_axle` |
+| `drift_tuning` | Rear-biased drift coupe using the Magic Formula tire path for controllable breakaway | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_drift_tuning` |
+| `driving_demo` | Checkpoint-based canyon driving demo with a scripted tiltrotor escort from `saddle-vehicle-flight` | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_driving_demo` |
+| `skid_steer` | Left/right drive-group steering for tank-like or tracked-style control | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_skid_steer` |
+| `slope_stability` | Hill hold, anti-roll, and low-speed traction on ramps and off-camber surfaces | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_slope_stability` |
 
 ## Crate-Local Lab
 
 The richer standalone verification app lives under `shared/vehicle/ground_vehicle/examples/lab`:
 
 ```bash
-cargo run -p ground_vehicle_lab
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab
 ```
 
 E2E scenarios:
 
 ```bash
-cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_smoke
-cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_braking
-cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_slope
-cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_drift
-cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_skid_steer
-cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_multi_axle
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_smoke
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_braking
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_slope
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_drift
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_skid_steer
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_multi_axle
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_drivetrain
 ```
 
 ## BRP

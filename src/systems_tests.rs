@@ -10,10 +10,11 @@ use bevy::{
 };
 
 use crate::{
-    DifferentialMode, DrivetrainConfig, GroundVehicle, GroundVehicleControl, GroundVehiclePlugin,
-    GroundVehicleSurface, GroundVehicleTelemetry, GroundVehicleWheel, GroundVehicleWheelState,
-    GroundVehicleWheelVisual, ReversePolicy, SteeringConfig, VehicleBecameAirborne, VehicleLanded,
-    WheelGroundedChanged, WheelSide, drivetrain, grip, steering, suspension,
+    DifferentialConfig, DifferentialMode, DrivetrainConfig, GroundVehicle, GroundVehicleControl,
+    GroundVehiclePlugin, GroundVehicleSurface, GroundVehicleTelemetry, GroundVehicleWheel,
+    GroundVehicleWheelState, GroundVehicleWheelVisual, ReversePolicy, SteeringConfig,
+    VehicleBecameAirborne, VehicleLanded, WheelGroundedChanged, WheelSide, drivetrain, grip,
+    steering, suspension,
 };
 
 #[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
@@ -157,9 +158,30 @@ fn reverse_policy_brakes_before_reverse_when_requested() {
 
 #[test]
 fn limited_slip_prefers_loaded_side_more_than_open_diff() {
-    let open = drivetrain::differential_share(DifferentialMode::Open, 0.5, 0.8, 0.55);
-    let limited = drivetrain::differential_share(DifferentialMode::LimitedSlip, 0.5, 0.8, 0.55);
-    let spool = drivetrain::differential_share(DifferentialMode::Spool, 0.5, 0.8, 0.55);
+    let open = drivetrain::differential_share(
+        DifferentialConfig {
+            mode: DifferentialMode::Open,
+            limited_slip_load_bias: 0.55,
+        },
+        0.5,
+        0.8,
+    );
+    let limited = drivetrain::differential_share(
+        DifferentialConfig {
+            mode: DifferentialMode::LimitedSlip,
+            limited_slip_load_bias: 0.55,
+        },
+        0.5,
+        0.8,
+    );
+    let spool = drivetrain::differential_share(
+        DifferentialConfig {
+            mode: DifferentialMode::Spool,
+            limited_slip_load_bias: 0.55,
+        },
+        0.5,
+        0.8,
+    );
     assert!((open - 0.5).abs() < f32::EPSILON);
     assert!(limited > open && limited < spool);
     assert!((spool - 0.8).abs() < f32::EPSILON);

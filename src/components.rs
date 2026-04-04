@@ -75,6 +75,7 @@ pub struct GroundVehicleWheel {
     pub mount_point: Vec3,
     pub radius_m: f32,
     pub width_m: f32,
+    pub rotational_inertia_kgm2: f32,
     pub steer_factor: f32,
     pub drive_factor: f32,
     pub brake_factor: f32,
@@ -93,6 +94,7 @@ impl GroundVehicleWheel {
             mount_point,
             radius_m: 0.36,
             width_m: 0.24,
+            rotational_inertia_kgm2: 1.05,
             steer_factor: 1.0,
             drive_factor: 0.0,
             brake_factor: 1.0,
@@ -111,6 +113,7 @@ impl GroundVehicleWheel {
             mount_point,
             radius_m: 0.36,
             width_m: 0.26,
+            rotational_inertia_kgm2: 1.12,
             steer_factor: 0.0,
             drive_factor: 1.0,
             brake_factor: 1.0,
@@ -159,6 +162,8 @@ pub struct GroundVehicleWheelState {
     pub lateral_speed_mps: f32,
     pub longitudinal_force_newtons: f32,
     pub lateral_force_newtons: f32,
+    pub slip_ratio: f32,
+    pub slip_angle_rad: f32,
     pub steer_angle_rad: f32,
     pub spin_angle_rad: f32,
     pub spin_speed_rad_per_sec: f32,
@@ -176,6 +181,8 @@ pub struct GroundVehicleTelemetry {
     pub drift_ratio: f32,
     pub drifting: bool,
     pub average_ground_normal: Vec3,
+    pub engine_rpm: f32,
+    pub selected_gear: i8,
 }
 
 #[derive(Component, Reflect, Debug, Clone, Copy)]
@@ -245,6 +252,8 @@ pub(crate) struct AxleAccumulator {
 pub(crate) struct GroundVehicleInternal {
     pub was_airborne: bool,
     pub was_drifting: bool,
+    pub engine_rpm: f32,
+    pub selected_gear: i8,
     pub grounded_wheels: u8,
     pub average_ground_normal_sum: Vec3,
     pub drive_factor_sum: f32,
@@ -261,6 +270,8 @@ impl Default for GroundVehicleInternal {
         Self {
             was_airborne: false,
             was_drifting: false,
+            engine_rpm: 900.0,
+            selected_gear: 1,
             grounded_wheels: 0,
             average_ground_normal_sum: Vec3::ZERO,
             drive_factor_sum: 0.0,

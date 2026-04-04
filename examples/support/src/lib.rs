@@ -9,11 +9,88 @@ use bevy_enhanced_input::prelude::{
     InputAction, Press as InputPress, Start, actions, bindings,
 };
 use ground_vehicle::{
-    AerodynamicsConfig, DifferentialMode, DrivetrainConfig, GroundVehicle, GroundVehicleControl,
-    GroundVehicleDebugDraw, GroundVehiclePlugin, GroundVehicleSurface, GroundVehicleTelemetry,
-    GroundVehicleWheel, GroundVehicleWheelVisual, ReversePolicy, StabilityConfig, SteeringConfig,
-    SteeringMode, SuspensionConfig, TireGripConfig, WheelSide,
+    AerodynamicsConfig, DifferentialConfig, DifferentialMode, DrivetrainConfig, EngineConfig,
+    GroundVehicle, GroundVehicleControl, GroundVehicleDebugDraw, GroundVehiclePlugin,
+    GroundVehicleSurface, GroundVehicleTelemetry, GroundVehicleWheel, GroundVehicleWheelVisual,
+    MagicFormulaConfig, ReversePolicy, StabilityConfig, SteeringConfig, SteeringMode,
+    SuspensionConfig, TireGripConfig, TireModel, TransmissionConfig, WheelSide,
 };
+use saddle_pane::prelude::*;
+
+#[derive(Resource, Clone, Pane)]
+#[pane(title = "Vehicle Tuning")]
+pub struct GroundVehicleExamplePane {
+    #[pane(slider, min = 18.0, max = 48.0, step = 0.5)]
+    pub steer_lock_deg: f32,
+    #[pane(slider, min = 1.0, max = 5.0, step = 0.05)]
+    pub steer_rate_rad_per_sec: f32,
+    #[pane(slider, min = 120.0, max = 1200.0, step = 10.0)]
+    pub peak_torque_nm: f32,
+    #[pane(slider, min = 1800.0, max = 7200.0, step = 50.0)]
+    pub shift_up_rpm: f32,
+    #[pane(slider, min = 1000.0, max = 5000.0, step = 50.0)]
+    pub shift_down_rpm: f32,
+    #[pane(slider, min = 0.8, max = 2.2, step = 0.02)]
+    pub longitudinal_grip: f32,
+    #[pane(slider, min = 0.6, max = 1.8, step = 0.02)]
+    pub lateral_grip: f32,
+    pub magic_formula_rear: bool,
+    pub debug_draw: bool,
+    #[pane(slider, min = 6.0, max = 24.0, step = 0.25)]
+    pub camera_distance: f32,
+    #[pane(slider, min = 2.0, max = 10.0, step = 0.25)]
+    pub camera_height: f32,
+    #[pane(slider, min = -4.0, max = 4.0, step = 0.1)]
+    pub camera_lateral_offset: f32,
+}
+
+impl Default for GroundVehicleExamplePane {
+    fn default() -> Self {
+        Self {
+            steer_lock_deg: 29.0,
+            steer_rate_rad_per_sec: 2.8,
+            peak_torque_nm: 250.0,
+            shift_up_rpm: 5_700.0,
+            shift_down_rpm: 2_450.0,
+            longitudinal_grip: 1.45,
+            lateral_grip: 1.10,
+            magic_formula_rear: false,
+            debug_draw: true,
+            camera_distance: 11.5,
+            camera_height: 4.8,
+            camera_lateral_offset: 0.0,
+        }
+    }
+}
+
+#[derive(Resource, Default, Clone, Pane)]
+#[pane(title = "Vehicle Telemetry")]
+pub struct GroundVehicleExampleStats {
+    #[pane(monitor)]
+    pub speed_mps: f32,
+    #[pane(monitor)]
+    pub engine_rpm: f32,
+    #[pane(monitor)]
+    pub selected_gear: i32,
+    #[pane(monitor)]
+    pub drift_ratio: f32,
+}
+
+pub fn pane_plugins() -> (
+    bevy_flair::FlairPlugin,
+    bevy_input_focus::InputDispatchPlugin,
+    bevy_ui_widgets::UiWidgetsPlugins,
+    bevy_input_focus::tab_navigation::TabNavigationPlugin,
+    saddle_pane::PanePlugin,
+) {
+    (
+        bevy_flair::FlairPlugin,
+        bevy_input_focus::InputDispatchPlugin,
+        bevy_ui_widgets::UiWidgetsPlugins,
+        bevy_input_focus::tab_navigation::TabNavigationPlugin,
+        saddle_pane::PanePlugin,
+    )
+}
 
 #[derive(Resource, Clone, Copy)]
 pub struct ExampleTitle(pub &'static str);
@@ -69,6 +146,7 @@ pub struct WheelSpec {
     pub mount_point: Vec3,
     pub radius_m: f32,
     pub width_m: f32,
+    pub rotational_inertia_kgm2: f32,
     pub steer_factor: f32,
     pub drive_factor: f32,
     pub brake_factor: f32,
@@ -87,6 +165,7 @@ impl WheelSpec {
             mount_point: self.mount_point,
             radius_m: self.radius_m,
             width_m: self.width_m,
+            rotational_inertia_kgm2: self.rotational_inertia_kgm2,
             steer_factor: self.steer_factor,
             drive_factor: self.drive_factor,
             brake_factor: self.brake_factor,
@@ -109,9 +188,17 @@ pub fn configure_example_app(app: &mut App, title: &'static str, debug_draw: boo
         }),
         PhysicsPlugins::default(),
         GroundVehiclePlugin::default(),
+        pane_plugins(),
     ))
     .insert_resource(Time::<Fixed>::from_hz(60.0))
-    .insert_resource(ExampleTitle(title));
+    .insert_resource(ExampleTitle(title))
+    .insert_resource(GroundVehicleExamplePane {
+        debug_draw,
+        ..default()
+    })
+    .insert_resource(GroundVehicleExampleStats::default())
+    .register_pane::<GroundVehicleExamplePane>()
+    .register_pane::<GroundVehicleExampleStats>();
     if !app.is_plugin_added::<bevy_enhanced_input::prelude::EnhancedInputPlugin>() {
         app.add_plugins(bevy_enhanced_input::prelude::EnhancedInputPlugin);
     }
@@ -140,6 +227,8 @@ pub fn configure_example_app(app: &mut App, title: &'static str, debug_draw: boo
             Update,
             (
                 apply_scripted_control_overrides,
+                sync_pane_to_runtime,
+                update_pane_stats,
                 follow_camera,
                 update_overlay,
             )
@@ -323,10 +412,27 @@ pub fn spawn_compact_car_demo(
             ..default()
         },
         drivetrain: DrivetrainConfig {
-            max_drive_force_newtons: 9_200.0,
-            max_reverse_force_newtons: 4_500.0,
+            engine: EngineConfig {
+                peak_torque_nm: 250.0,
+                peak_torque_rpm: 3_900.0,
+                redline_rpm: 6_400.0,
+                engine_brake_torque_nm: 85.0,
+                ..default()
+            },
+            transmission: TransmissionConfig {
+                final_drive_ratio: 3.70,
+                forward_gears: [3.60, 2.19, 1.46, 1.09, 0.87, 0.72],
+                forward_gear_count: 5,
+                reverse_ratio: 3.18,
+                shift_up_rpm: 5_700.0,
+                shift_down_rpm: 2_450.0,
+                ..default()
+            },
             brake_force_newtons: 15_000.0,
-            differential: DifferentialMode::Open,
+            differential: DifferentialConfig {
+                mode: DifferentialMode::Open,
+                ..default()
+            },
             ..default()
         },
         ..default()
@@ -363,9 +469,29 @@ pub fn spawn_drift_coupe_demo(
             ..default()
         },
         drivetrain: DrivetrainConfig {
-            max_drive_force_newtons: 10_400.0,
+            engine: EngineConfig {
+                peak_torque_nm: 410.0,
+                peak_torque_rpm: 4_800.0,
+                redline_rpm: 7_200.0,
+                idle_torque_fraction: 0.40,
+                redline_torque_fraction: 0.56,
+                engine_brake_torque_nm: 95.0,
+                ..default()
+            },
+            transmission: TransmissionConfig {
+                final_drive_ratio: 4.10,
+                forward_gears: [3.12, 2.10, 1.55, 1.22, 1.00, 0.82],
+                forward_gear_count: 5,
+                reverse_ratio: 3.00,
+                shift_up_rpm: 6_300.0,
+                shift_down_rpm: 3_600.0,
+                ..default()
+            },
             handbrake_force_newtons: 11_200.0,
-            differential: DifferentialMode::Spool,
+            differential: DifferentialConfig {
+                mode: DifferentialMode::Spool,
+                ..default()
+            },
             ..default()
         },
         stability: StabilityConfig {
@@ -606,6 +732,7 @@ fn compact_car_wheels() -> Vec<WheelSpec> {
             mount_point: Vec3::new(-0.82, -0.20, -1.24),
             radius_m: 0.36,
             width_m: 0.24,
+            rotational_inertia_kgm2: 1.02,
             steer_factor: 1.0,
             drive_factor: 1.0,
             brake_factor: 1.0,
@@ -625,6 +752,7 @@ fn compact_car_wheels() -> Vec<WheelSpec> {
                 mount_point: Vec3::new(-0.82, -0.20, -1.24),
                 radius_m: 0.36,
                 width_m: 0.24,
+                rotational_inertia_kgm2: 1.02,
                 steer_factor: 1.0,
                 drive_factor: 1.0,
                 brake_factor: 1.0,
@@ -640,6 +768,7 @@ fn compact_car_wheels() -> Vec<WheelSpec> {
             mount_point: Vec3::new(-0.82, -0.20, 1.20),
             radius_m: 0.37,
             width_m: 0.26,
+            rotational_inertia_kgm2: 1.10,
             steer_factor: 0.0,
             drive_factor: 0.0,
             brake_factor: 1.0,
@@ -659,6 +788,7 @@ fn compact_car_wheels() -> Vec<WheelSpec> {
                 mount_point: Vec3::new(-0.82, -0.20, 1.20),
                 radius_m: 0.37,
                 width_m: 0.26,
+                rotational_inertia_kgm2: 1.10,
                 steer_factor: 0.0,
                 drive_factor: 0.0,
                 brake_factor: 1.0,
@@ -680,9 +810,18 @@ fn drift_coupe_wheels() -> Vec<WheelSpec> {
         } else {
             wheel.drive_factor = 1.0;
             wheel.handbrake_factor = 1.0;
+            wheel.rotational_inertia_kgm2 = 0.94;
+            wheel.tire.model = TireModel::MagicFormula;
             wheel.tire.lateral_grip = 0.82;
+            wheel.tire.longitudinal_grip = 1.18;
+            wheel.tire.low_speed_slip_reference_mps = 1.8;
             wheel.tire.handbrake_lateral_multiplier = 0.24;
             wheel.tire.handbrake_longitudinal_multiplier = 0.12;
+            wheel.tire.magic_formula = MagicFormulaConfig {
+                longitudinal_peak_slip_ratio: 0.16,
+                lateral_peak_slip_angle_rad: 13.0_f32.to_radians(),
+                ..default()
+            };
         }
     }
     wheels
@@ -702,13 +841,32 @@ fn cargo_truck_vehicle() -> GroundVehicle {
             ..default()
         },
         drivetrain: DrivetrainConfig {
-            differential: DifferentialMode::LimitedSlip,
-            max_drive_force_newtons: 18_000.0,
-            max_reverse_force_newtons: 9_000.0,
+            engine: EngineConfig {
+                peak_torque_nm: 1_060.0,
+                peak_torque_rpm: 1_900.0,
+                redline_rpm: 3_400.0,
+                idle_torque_fraction: 0.58,
+                redline_torque_fraction: 0.48,
+                engine_brake_torque_nm: 280.0,
+                ..default()
+            },
+            transmission: TransmissionConfig {
+                final_drive_ratio: 4.85,
+                forward_gears: [6.40, 3.55, 2.35, 1.58, 1.22, 0.92],
+                forward_gear_count: 6,
+                reverse_ratio: 6.10,
+                shift_up_rpm: 2_950.0,
+                shift_down_rpm: 1_450.0,
+                clutch_coupling_speed_mps: 2.4,
+                ..default()
+            },
+            differential: DifferentialConfig {
+                mode: DifferentialMode::LimitedSlip,
+                limited_slip_load_bias: 0.68,
+            },
             brake_force_newtons: 24_000.0,
             handbrake_force_newtons: 16_000.0,
             reverse_policy: ReversePolicy::StopThenReverse,
-            limited_slip_load_bias: 0.68,
             ..default()
         },
         stability: StabilityConfig {
@@ -751,6 +909,7 @@ fn cargo_truck_wheels() -> Vec<WheelSpec> {
             mount_point: Vec3::new(-1.08, -0.35, -2.70),
             radius_m: 0.52,
             width_m: 0.34,
+            rotational_inertia_kgm2: 2.35,
             steer_factor: 1.0,
             drive_factor: 0.0,
             brake_factor: 1.0,
@@ -770,6 +929,7 @@ fn cargo_truck_wheels() -> Vec<WheelSpec> {
                 mount_point: Vec3::new(-1.08, -0.35, -2.70),
                 radius_m: 0.52,
                 width_m: 0.34,
+                rotational_inertia_kgm2: 2.35,
                 steer_factor: 1.0,
                 drive_factor: 0.0,
                 brake_factor: 1.0,
@@ -785,6 +945,7 @@ fn cargo_truck_wheels() -> Vec<WheelSpec> {
             mount_point: Vec3::new(-1.12, -0.35, 0.15),
             radius_m: 0.54,
             width_m: 0.36,
+            rotational_inertia_kgm2: 2.55,
             steer_factor: 0.0,
             drive_factor: 1.0,
             brake_factor: 1.0,
@@ -804,6 +965,7 @@ fn cargo_truck_wheels() -> Vec<WheelSpec> {
                 mount_point: Vec3::new(-1.12, -0.35, 0.15),
                 radius_m: 0.54,
                 width_m: 0.36,
+                rotational_inertia_kgm2: 2.55,
                 steer_factor: 0.0,
                 drive_factor: 1.0,
                 brake_factor: 1.0,
@@ -819,6 +981,7 @@ fn cargo_truck_wheels() -> Vec<WheelSpec> {
             mount_point: Vec3::new(-1.12, -0.35, 2.55),
             radius_m: 0.54,
             width_m: 0.36,
+            rotational_inertia_kgm2: 2.55,
             steer_factor: 0.0,
             drive_factor: 1.0,
             brake_factor: 1.0,
@@ -838,6 +1001,7 @@ fn cargo_truck_wheels() -> Vec<WheelSpec> {
                 mount_point: Vec3::new(-1.12, -0.35, 2.55),
                 radius_m: 0.54,
                 width_m: 0.36,
+                rotational_inertia_kgm2: 2.55,
                 steer_factor: 0.0,
                 drive_factor: 1.0,
                 brake_factor: 1.0,
@@ -863,9 +1027,28 @@ fn skid_vehicle() -> GroundVehicle {
             ..default()
         },
         drivetrain: DrivetrainConfig {
-            differential: DifferentialMode::Spool,
-            max_drive_force_newtons: 13_500.0,
-            max_reverse_force_newtons: 8_500.0,
+            engine: EngineConfig {
+                peak_torque_nm: 720.0,
+                peak_torque_rpm: 2_200.0,
+                redline_rpm: 4_100.0,
+                idle_torque_fraction: 0.52,
+                redline_torque_fraction: 0.54,
+                engine_brake_torque_nm: 180.0,
+                ..default()
+            },
+            transmission: TransmissionConfig {
+                automatic: false,
+                forward_gears: [5.30, 3.10, 1.85, 1.20, 1.0, 1.0],
+                forward_gear_count: 1,
+                final_drive_ratio: 5.40,
+                reverse_ratio: 5.10,
+                clutch_coupling_speed_mps: 1.5,
+                ..default()
+            },
+            differential: DifferentialConfig {
+                mode: DifferentialMode::Spool,
+                ..default()
+            },
             brake_force_newtons: 15_000.0,
             handbrake_force_newtons: 6_000.0,
             reverse_policy: ReversePolicy::Immediate,
@@ -909,6 +1092,7 @@ fn skid_vehicle_wheels() -> Vec<WheelSpec> {
             mount_point: Vec3::new(-0.95, -0.28, z),
             radius_m: 0.42,
             width_m: 0.28,
+            rotational_inertia_kgm2: 1.45,
             steer_factor: 0.0,
             drive_factor: 1.0,
             brake_factor: 1.0,
@@ -923,6 +1107,7 @@ fn skid_vehicle_wheels() -> Vec<WheelSpec> {
             mount_point: Vec3::new(0.95, -0.28, z),
             radius_m: 0.42,
             width_m: 0.28,
+            rotational_inertia_kgm2: 1.45,
             steer_factor: 0.0,
             drive_factor: 1.0,
             brake_factor: 1.0,
@@ -948,11 +1133,31 @@ fn rover_vehicle() -> GroundVehicle {
             ..default()
         },
         drivetrain: DrivetrainConfig {
-            max_drive_force_newtons: 4_800.0,
-            max_reverse_force_newtons: 3_800.0,
+            engine: EngineConfig {
+                peak_torque_nm: 185.0,
+                peak_torque_rpm: 2_600.0,
+                redline_rpm: 4_500.0,
+                idle_torque_fraction: 0.78,
+                redline_torque_fraction: 0.72,
+                engine_brake_torque_nm: 65.0,
+                ..default()
+            },
+            transmission: TransmissionConfig {
+                final_drive_ratio: 6.10,
+                forward_gears: [3.85, 2.35, 1.55, 1.12, 0.92, 0.78],
+                forward_gear_count: 4,
+                reverse_ratio: 3.45,
+                shift_up_rpm: 4_050.0,
+                shift_down_rpm: 2_050.0,
+                clutch_coupling_speed_mps: 1.2,
+                ..default()
+            },
             brake_force_newtons: 10_500.0,
             handbrake_force_newtons: 8_500.0,
-            differential: DifferentialMode::LimitedSlip,
+            differential: DifferentialConfig {
+                mode: DifferentialMode::LimitedSlip,
+                limited_slip_load_bias: 0.62,
+            },
             ..default()
         },
         stability: StabilityConfig {
@@ -995,6 +1200,7 @@ fn rover_wheels() -> Vec<WheelSpec> {
             mount_point: Vec3::new(-0.78, -0.18, -0.95),
             radius_m: 0.40,
             width_m: 0.26,
+            rotational_inertia_kgm2: 0.98,
             steer_factor: 1.0,
             drive_factor: 1.0,
             brake_factor: 1.0,
@@ -1009,6 +1215,7 @@ fn rover_wheels() -> Vec<WheelSpec> {
             mount_point: Vec3::new(0.78, -0.18, -0.95),
             radius_m: 0.40,
             width_m: 0.26,
+            rotational_inertia_kgm2: 0.98,
             steer_factor: 1.0,
             drive_factor: 1.0,
             brake_factor: 1.0,
@@ -1023,6 +1230,7 @@ fn rover_wheels() -> Vec<WheelSpec> {
             mount_point: Vec3::new(-0.78, -0.18, 0.95),
             radius_m: 0.40,
             width_m: 0.26,
+            rotational_inertia_kgm2: 1.02,
             steer_factor: 0.0,
             drive_factor: 1.0,
             brake_factor: 1.0,
@@ -1037,6 +1245,7 @@ fn rover_wheels() -> Vec<WheelSpec> {
             mount_point: Vec3::new(0.78, -0.18, 0.95),
             radius_m: 0.40,
             width_m: 0.26,
+            rotational_inertia_kgm2: 1.02,
             steer_factor: 0.0,
             drive_factor: 1.0,
             brake_factor: 1.0,
@@ -1045,6 +1254,90 @@ fn rover_wheels() -> Vec<WheelSpec> {
             tire,
         },
     ]
+}
+
+fn sync_pane_to_runtime(
+    pane: Res<GroundVehicleExamplePane>,
+    mut debug_draw: ResMut<GroundVehicleDebugDraw>,
+    mut camera: Query<&mut FollowCamera>,
+    mut vehicles: Query<
+        (
+            Entity,
+            &mut GroundVehicle,
+            Option<&ContextActivity<ExampleDriver>>,
+        ),
+        With<ExampleDriver>,
+    >,
+    mut wheels: Query<&mut GroundVehicleWheel>,
+) {
+    if !pane.is_changed() {
+        return;
+    }
+
+    debug_draw.enabled = pane.debug_draw;
+
+    if let Ok(mut follow) = camera.single_mut() {
+        follow.distance = pane.camera_distance;
+        follow.height = pane.camera_height;
+        follow.lateral_offset = pane.camera_lateral_offset;
+    }
+
+    let Some((active_entity, mut vehicle, _)) = vehicles
+        .iter_mut()
+        .find(|(_, _, activity)| activity.is_none_or(|activity| **activity))
+    else {
+        return;
+    };
+
+    vehicle.steering.max_angle_rad = pane.steer_lock_deg.to_radians();
+    vehicle.steering.steer_rate_rad_per_sec = pane.steer_rate_rad_per_sec;
+    vehicle.drivetrain.engine.peak_torque_nm = pane.peak_torque_nm;
+    vehicle.drivetrain.transmission.shift_up_rpm = pane.shift_up_rpm.max(100.0);
+    vehicle.drivetrain.transmission.shift_down_rpm = pane
+        .shift_down_rpm
+        .min(pane.shift_up_rpm - 100.0)
+        .max(100.0);
+
+    for mut wheel in &mut wheels {
+        if wheel.chassis != active_entity {
+            continue;
+        }
+
+        wheel.tire.longitudinal_grip = pane.longitudinal_grip;
+        wheel.tire.lateral_grip = pane.lateral_grip;
+        if wheel.axle > 0 || wheel.steer_factor <= 0.1 {
+            wheel.tire.model = if pane.magic_formula_rear {
+                TireModel::MagicFormula
+            } else {
+                TireModel::Linear
+            };
+        } else {
+            wheel.tire.model = TireModel::Linear;
+        }
+    }
+}
+
+fn update_pane_stats(
+    mut stats: ResMut<GroundVehicleExampleStats>,
+    active_driver: Query<
+        (
+            &GroundVehicleTelemetry,
+            Option<&ContextActivity<ExampleDriver>>,
+        ),
+        With<ExampleDriver>,
+    >,
+) {
+    let Some((telemetry, _)) = active_driver
+        .iter()
+        .find(|(_, activity)| activity.is_none_or(|activity| **activity))
+    else {
+        return;
+    };
+
+    stats.speed_mps = telemetry.speed_mps;
+    stats.engine_rpm = telemetry.engine_rpm;
+    stats.selected_gear = i32::from(telemetry.selected_gear);
+    stats.drift_ratio = telemetry.drift_ratio;
 }
 
 fn update_overlay(

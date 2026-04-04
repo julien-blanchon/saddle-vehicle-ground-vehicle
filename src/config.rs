@@ -44,6 +44,21 @@ pub enum DifferentialMode {
     Spool,
 }
 
+#[derive(Reflect, Debug, Clone, Copy, PartialEq)]
+pub struct DifferentialConfig {
+    pub mode: DifferentialMode,
+    pub limited_slip_load_bias: f32,
+}
+
+impl Default for DifferentialConfig {
+    fn default() -> Self {
+        Self {
+            mode: DifferentialMode::LimitedSlip,
+            limited_slip_load_bias: 0.55,
+        }
+    }
+}
+
 #[derive(Reflect, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ReversePolicy {
     Immediate,
@@ -51,30 +66,122 @@ pub enum ReversePolicy {
 }
 
 #[derive(Reflect, Debug, Clone, Copy, PartialEq)]
+pub struct EngineConfig {
+    pub idle_rpm: f32,
+    pub peak_torque_nm: f32,
+    pub peak_torque_rpm: f32,
+    pub redline_rpm: f32,
+    pub idle_torque_fraction: f32,
+    pub redline_torque_fraction: f32,
+    pub engine_brake_torque_nm: f32,
+}
+
+impl EngineConfig {
+    pub fn torque_at_rpm(self, rpm: f32) -> f32 {
+        let idle_rpm = self.idle_rpm.max(100.0);
+        let redline_rpm = self.redline_rpm.max(idle_rpm + 100.0);
+        let peak_rpm = self.peak_torque_rpm.clamp(idle_rpm, redline_rpm);
+        let clamped_rpm = rpm.clamp(idle_rpm, redline_rpm);
+        let peak_torque = self.peak_torque_nm.max(0.0);
+        let idle_torque = peak_torque * self.idle_torque_fraction.max(0.0);
+        let redline_torque = peak_torque * self.redline_torque_fraction.max(0.0);
+
+        if clamped_rpm <= peak_rpm {
+            let t = (clamped_rpm - idle_rpm) / (peak_rpm - idle_rpm).max(1.0);
+            idle_torque.lerp(peak_torque, t)
+        } else {
+            let t = (clamped_rpm - peak_rpm) / (redline_rpm - peak_rpm).max(1.0);
+            peak_torque.lerp(redline_torque, t)
+        }
+    }
+}
+
+impl Default for EngineConfig {
+    fn default() -> Self {
+        Self {
+            idle_rpm: 900.0,
+            peak_torque_nm: 420.0,
+            peak_torque_rpm: 4_200.0,
+            redline_rpm: 6_800.0,
+            idle_torque_fraction: 0.42,
+            redline_torque_fraction: 0.62,
+            engine_brake_torque_nm: 110.0,
+        }
+    }
+}
+
+#[derive(Reflect, Debug, Clone, Copy, PartialEq)]
+pub struct TransmissionConfig {
+    pub automatic: bool,
+    pub forward_gears: [f32; 6],
+    pub forward_gear_count: u8,
+    pub final_drive_ratio: f32,
+    pub reverse_ratio: f32,
+    pub shift_up_rpm: f32,
+    pub shift_down_rpm: f32,
+    pub clutch_coupling_speed_mps: f32,
+}
+
+impl TransmissionConfig {
+    pub fn gear_ratio(self, gear: i8) -> f32 {
+        match gear.cmp(&0) {
+            std::cmp::Ordering::Less => self.reverse_ratio.abs() * self.final_drive_ratio.abs(),
+            std::cmp::Ordering::Equal => 0.0,
+            std::cmp::Ordering::Greater => {
+                let max_index = usize::from(self.forward_gear_count.saturating_sub(1))
+                    .min(self.forward_gears.len().saturating_sub(1));
+                let index = usize::try_from((gear - 1).max(0))
+                    .unwrap_or(0)
+                    .min(max_index);
+                self.forward_gears[index].abs() * self.final_drive_ratio.abs()
+            }
+        }
+    }
+
+    pub fn max_forward_gear(self) -> i8 {
+        self.forward_gear_count
+            .clamp(1, self.forward_gears.len() as u8) as i8
+    }
+}
+
+impl Default for TransmissionConfig {
+    fn default() -> Self {
+        Self {
+            automatic: true,
+            forward_gears: [3.45, 2.25, 1.62, 1.22, 0.98, 0.84],
+            forward_gear_count: 5,
+            final_drive_ratio: 3.85,
+            reverse_ratio: 3.10,
+            shift_up_rpm: 5_900.0,
+            shift_down_rpm: 2_600.0,
+            clutch_coupling_speed_mps: 4.0,
+        }
+    }
+}
+
+#[derive(Reflect, Debug, Clone, Copy, PartialEq)]
 pub struct DrivetrainConfig {
-    pub differential: DifferentialMode,
+    pub engine: EngineConfig,
+    pub transmission: TransmissionConfig,
+    pub differential: DifferentialConfig,
     pub reverse_policy: ReversePolicy,
-    pub max_drive_force_newtons: f32,
-    pub max_reverse_force_newtons: f32,
+    pub drivetrain_efficiency: f32,
     pub brake_force_newtons: f32,
     pub handbrake_force_newtons: f32,
-    pub engine_brake_force_newtons: f32,
     pub reverse_speed_threshold_mps: f32,
-    pub limited_slip_load_bias: f32,
 }
 
 impl Default for DrivetrainConfig {
     fn default() -> Self {
         Self {
-            differential: DifferentialMode::LimitedSlip,
+            engine: EngineConfig::default(),
+            transmission: TransmissionConfig::default(),
+            differential: DifferentialConfig::default(),
             reverse_policy: ReversePolicy::StopThenReverse,
-            max_drive_force_newtons: 9_500.0,
-            max_reverse_force_newtons: 5_800.0,
+            drivetrain_efficiency: 0.88,
             brake_force_newtons: 12_000.0,
             handbrake_force_newtons: 10_500.0,
-            engine_brake_force_newtons: 2_200.0,
             reverse_speed_threshold_mps: 1.25,
-            limited_slip_load_bias: 0.55,
         }
     }
 }
@@ -116,8 +223,42 @@ impl Default for SuspensionConfig {
     }
 }
 
+#[derive(Reflect, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum TireModel {
+    Linear,
+    MagicFormula,
+}
+
+#[derive(Reflect, Debug, Clone, Copy, PartialEq)]
+pub struct MagicFormulaConfig {
+    pub longitudinal_b: f32,
+    pub longitudinal_c: f32,
+    pub longitudinal_e: f32,
+    pub longitudinal_peak_slip_ratio: f32,
+    pub lateral_b: f32,
+    pub lateral_c: f32,
+    pub lateral_e: f32,
+    pub lateral_peak_slip_angle_rad: f32,
+}
+
+impl Default for MagicFormulaConfig {
+    fn default() -> Self {
+        Self {
+            longitudinal_b: 10.5,
+            longitudinal_c: 1.72,
+            longitudinal_e: 0.32,
+            longitudinal_peak_slip_ratio: 0.12,
+            lateral_b: 7.8,
+            lateral_c: 1.38,
+            lateral_e: 0.24,
+            lateral_peak_slip_angle_rad: 10.0_f32.to_radians(),
+        }
+    }
+}
+
 #[derive(Reflect, Debug, Clone, Copy, PartialEq)]
 pub struct TireGripConfig {
+    pub model: TireModel,
     pub longitudinal_grip: f32,
     pub lateral_grip: f32,
     pub longitudinal_stiffness: f32,
@@ -129,11 +270,14 @@ pub struct TireGripConfig {
     pub low_speed_lateral_multiplier: f32,
     pub nominal_load_newtons: f32,
     pub load_sensitivity: f32,
+    pub low_speed_slip_reference_mps: f32,
+    pub magic_formula: MagicFormulaConfig,
 }
 
 impl Default for TireGripConfig {
     fn default() -> Self {
         Self {
+            model: TireModel::Linear,
             longitudinal_grip: 1.35,
             lateral_grip: 1.15,
             longitudinal_stiffness: 170.0,
@@ -145,6 +289,8 @@ impl Default for TireGripConfig {
             low_speed_lateral_multiplier: 1.35,
             nominal_load_newtons: 3_500.0,
             load_sensitivity: 0.45,
+            low_speed_slip_reference_mps: 2.5,
+            magic_formula: MagicFormulaConfig::default(),
         }
     }
 }

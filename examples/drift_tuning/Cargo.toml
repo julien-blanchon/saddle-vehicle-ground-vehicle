@@ -8,6 +8,7 @@ publish = false
 bevy = { workspace = true }
 ground_vehicle = { workspace = true }
 ground_vehicle_example_support = { path = "../support" }
+saddle-pane = { workspace = true }
 
 [lints]
 workspace = true

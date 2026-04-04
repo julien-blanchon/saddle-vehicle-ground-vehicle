@@ -128,6 +128,8 @@ pub(crate) fn sample_wheels_and_apply_suspension(
         state.lateral_force_newtons = 0.0;
         state.longitudinal_speed_mps = 0.0;
         state.lateral_speed_mps = 0.0;
+        state.slip_ratio = 0.0;
+        state.slip_angle_rad = 0.0;
         wheel_internal.previous_suspension_length_m = clamped_length_m;
 
         if wheel.drive_factor > 0.0 {

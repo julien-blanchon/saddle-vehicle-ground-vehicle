@@ -216,6 +216,8 @@ pub(crate) fn update_vehicle_telemetry(
         telemetry.drift_ratio = drift_ratio;
         telemetry.drifting = drifting;
         telemetry.average_ground_normal = average_ground_normal;
+        telemetry.engine_rpm = internal.engine_rpm;
+        telemetry.selected_gear = internal.selected_gear;
     }
 }
 
