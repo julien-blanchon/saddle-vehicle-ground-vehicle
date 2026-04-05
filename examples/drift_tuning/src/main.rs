@@ -107,7 +107,7 @@ fn setup(
             ScriptedControlOverride::default(),
             avian3d::prelude::Mass(vehicle.mass_kg),
             avian3d::prelude::AngularInertia::new(vehicle.angular_inertia_kgm2),
-            avian3d::prelude::CenterOfMass::new(0.0, 0.0, 0.0),
+            avian3d::prelude::CenterOfMass::new(0.0, -0.35, 0.0),
             ResetPose {
                 transform,
                 linear_velocity: Vec3::ZERO,
@@ -127,24 +127,23 @@ fn setup(
         ))
         .id();
 
-    commands.spawn((
-        Name::new("Street Drift Coupe Roof"),
-        Mesh3d(meshes.add(Cuboid::new(
-            chassis_size.x * 0.72,
-            chassis_size.y * 0.42,
-            chassis_size.z * 0.45,
-        ))),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: Color::srgb(0.10, 0.41, 0.83).mix(&Color::WHITE, 0.18),
-            perceptual_roughness: 0.46,
-            ..default()
-        })),
-        Transform::from_translation(
-            transform.translation
-                + transform.rotation * Vec3::new(0.0, chassis_size.y * 0.46, 0.12),
-        )
-        .with_rotation(transform.rotation),
-    ));
+    // Roof — parented to chassis so it follows the vehicle
+    commands.entity(chassis_entity).with_children(|parent| {
+        parent.spawn((
+            Name::new("Street Drift Coupe Roof"),
+            Mesh3d(meshes.add(Cuboid::new(
+                chassis_size.x * 0.72,
+                chassis_size.y * 0.42,
+                chassis_size.z * 0.45,
+            ))),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: Color::srgb(0.10, 0.41, 0.83).mix(&Color::WHITE, 0.18),
+                perceptual_roughness: 0.46,
+                ..default()
+            })),
+            Transform::from_xyz(0.0, chassis_size.y * 0.46, 0.12),
+        ));
+    });
 
     // ---------------------------------------------------------------------------
     // Suspension (shared base)

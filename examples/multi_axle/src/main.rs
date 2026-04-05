@@ -138,25 +138,23 @@ fn setup(
         ))
         .id();
 
-    // Decorative roof / cab
-    commands.spawn((
-        Name::new("Cargo Truck Roof"),
-        Mesh3d(meshes.add(Cuboid::new(
-            chassis_size.x * 0.72,
-            chassis_size.y * 0.42,
-            chassis_size.z * 0.45,
-        ))),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: Color::srgb(0.72, 0.56, 0.23).mix(&Color::WHITE, 0.18),
-            perceptual_roughness: 0.46,
-            ..default()
-        })),
-        Transform::from_translation(
-            transform.translation
-                + transform.rotation * Vec3::new(0.0, chassis_size.y * 0.46, 0.12),
-        )
-        .with_rotation(transform.rotation),
-    ));
+    // Roof / cab — parented to chassis so it follows the vehicle
+    commands.entity(chassis_entity).with_children(|parent| {
+        parent.spawn((
+            Name::new("Cargo Truck Roof"),
+            Mesh3d(meshes.add(Cuboid::new(
+                chassis_size.x * 0.72,
+                chassis_size.y * 0.42,
+                chassis_size.z * 0.45,
+            ))),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: Color::srgb(0.72, 0.56, 0.23).mix(&Color::WHITE, 0.18),
+                perceptual_roughness: 0.46,
+                ..default()
+            })),
+            Transform::from_xyz(0.0, chassis_size.y * 0.46, 0.12),
+        ));
+    });
 
     // ---------------------------------------------------------------------------
     // Suspension & tire — shared heavy-duty spec across all axles

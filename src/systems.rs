@@ -1,7 +1,8 @@
 use crate::{
-    DriftStateChanged, GroundVehicle, GroundVehicleInternal, GroundVehicleResolvedControl,
-    GroundVehicleTelemetry, GroundVehicleWheel, GroundVehicleWheelInternal,
-    GroundVehicleWheelState, VehicleBecameAirborne, VehicleLanded, WheelGroundedChanged,
+    DriftStateChanged, GroundVehicle, GroundVehicleInternal, GroundVehicleReset,
+    GroundVehicleResolvedControl, GroundVehicleTelemetry, GroundVehicleWheel,
+    GroundVehicleWheelInternal, GroundVehicleWheelState, VehicleBecameAirborne, VehicleLanded,
+    WheelGroundedChanged,
 };
 use avian3d::prelude::*;
 use bevy::prelude::*;
@@ -53,6 +54,35 @@ pub(crate) fn sync_new_wheel_state(
         state.suspension_length_m = length;
         state.contact_normal = Vec3::Y;
         internal.previous_suspension_length_m = length;
+    }
+}
+
+pub(crate) fn process_vehicle_resets(
+    mut commands: Commands,
+    mut chassis: Query<(Entity, &mut GroundVehicleInternal), With<GroundVehicleReset>>,
+    mut wheels: Query<(
+        &GroundVehicleWheel,
+        &mut GroundVehicleWheelState,
+        &mut GroundVehicleWheelInternal,
+    )>,
+) {
+    for (entity, mut internal) in &mut chassis {
+        *internal = GroundVehicleInternal::default();
+        for (wheel, mut state, mut wheel_internal) in &mut wheels {
+            if wheel.chassis == entity {
+                let rest_length = wheel.suspension.max_length();
+                *state = GroundVehicleWheelState {
+                    suspension_length_m: rest_length,
+                    contact_normal: Vec3::Y,
+                    ..default()
+                };
+                *wheel_internal = GroundVehicleWheelInternal {
+                    previous_suspension_length_m: rest_length,
+                    ..default()
+                };
+            }
+        }
+        commands.entity(entity).remove::<GroundVehicleReset>();
     }
 }
 

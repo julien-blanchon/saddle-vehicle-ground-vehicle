@@ -140,24 +140,23 @@ fn setup(
         ))
         .id();
 
-    commands.spawn((
-        Name::new("Skid Vehicle Roof"),
-        Mesh3d(meshes.add(Cuboid::new(
-            chassis_size.x * 0.72,
-            chassis_size.y * 0.42,
-            chassis_size.z * 0.45,
-        ))),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: Color::srgb(0.28, 0.52, 0.35).mix(&Color::WHITE, 0.18),
-            perceptual_roughness: 0.46,
-            ..default()
-        })),
-        Transform::from_translation(
-            transform.translation
-                + transform.rotation * Vec3::new(0.0, chassis_size.y * 0.46, 0.12),
-        )
-        .with_rotation(transform.rotation),
-    ));
+    // Roof — parented to chassis so it follows the vehicle
+    commands.entity(chassis_entity).with_children(|parent| {
+        parent.spawn((
+            Name::new("Skid Vehicle Roof"),
+            Mesh3d(meshes.add(Cuboid::new(
+                chassis_size.x * 0.72,
+                chassis_size.y * 0.42,
+                chassis_size.z * 0.45,
+            ))),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: Color::srgb(0.28, 0.52, 0.35).mix(&Color::WHITE, 0.18),
+                perceptual_roughness: 0.46,
+                ..default()
+            })),
+            Transform::from_xyz(0.0, chassis_size.y * 0.46, 0.12),
+        ));
+    });
 
     // ---------------------------------------------------------------------------
     // Suspension & tire — uniform across all 6 wheels

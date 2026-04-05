@@ -14,9 +14,9 @@ pub(crate) use components::{
     GroundVehicleWheelInternal,
 };
 pub use components::{
-    GroundVehicle, GroundVehicleControl, GroundVehicleDebugDraw, GroundVehicleSurface,
-    GroundVehicleTelemetry, GroundVehicleWheel, GroundVehicleWheelState, GroundVehicleWheelVisual,
-    WheelSide,
+    GroundVehicle, GroundVehicleControl, GroundVehicleDebugDraw, GroundVehicleReset,
+    GroundVehicleSurface, GroundVehicleTelemetry, GroundVehicleWheel, GroundVehicleWheelState,
+    GroundVehicleWheelVisual, WheelSide,
 };
 pub use config::{
     AerodynamicsConfig, DifferentialConfig, DifferentialMode, DrivetrainConfig, EngineConfig,
@@ -99,6 +99,7 @@ impl Plugin for GroundVehiclePlugin {
             .register_type::<GroundVehicle>()
             .register_type::<GroundVehicleControl>()
             .register_type::<GroundVehicleDebugDraw>()
+            .register_type::<GroundVehicleReset>()
             .register_type::<GroundVehicleSurface>()
             .register_type::<GroundVehicleTelemetry>()
             .register_type::<GroundVehicleWheel>()
@@ -128,6 +129,10 @@ impl Plugin for GroundVehiclePlugin {
                     GroundVehicleSystems::Telemetry,
                 )
                     .chain(),
+            )
+            .add_systems(
+                self.update_schedule,
+                systems::process_vehicle_resets.before(GroundVehicleSystems::InputAdaptation),
             )
             .add_systems(
                 self.update_schedule,

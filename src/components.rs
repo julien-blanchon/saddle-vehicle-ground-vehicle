@@ -1,13 +1,13 @@
 use crate::config::{
-    AerodynamicsConfig, DrivetrainConfig, StabilityConfig, SteeringConfig, SuspensionConfig,
-    TireGripConfig,
+    AerodynamicsConfig, DifferentialConfig, DrivetrainConfig, EngineConfig, StabilityConfig,
+    SteeringConfig, SuspensionConfig, TireGripConfig, TransmissionConfig,
 };
 use avian3d::prelude::*;
 use bevy::prelude::*;
 
 const DEFAULT_MASS_KG: f32 = 1_300.0;
-const DEFAULT_COM_OFFSET: Vec3 = Vec3::new(0.0, -0.35, 0.0);
-const DEFAULT_INERTIA: Vec3 = Vec3::new(650.0, 820.0, 1_050.0);
+const DEFAULT_COM_OFFSET: Vec3 = Vec3::new(0.0, -0.40, 0.0);
+const DEFAULT_INERTIA: Vec3 = Vec3::new(800.0, 1_000.0, 1_200.0);
 
 #[derive(Reflect, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum WheelSide {
@@ -54,6 +54,194 @@ impl Default for GroundVehicle {
         }
     }
 }
+
+impl GroundVehicle {
+    /// Arcade preset — snappy acceleration, forgiving handling, high stability assists.
+    ///
+    /// Suitable for Mario Kart-style games, Rocket League, or casual driving.
+    /// High torque, fast steering, generous grip, strong anti-roll and yaw damping.
+    pub fn arcade_preset() -> Self {
+        Self {
+            mass_kg: 1_100.0,
+            angular_inertia_kgm2: Vec3::new(600.0, 800.0, 900.0),
+            center_of_mass_offset: Vec3::new(0.0, -0.45, 0.0),
+            steering: SteeringConfig {
+                max_angle_rad: 35.0_f32.to_radians(),
+                steer_rate_rad_per_sec: 4.5,
+                speed_reduction_start_mps: 15.0,
+                speed_reduction_end_mps: 40.0,
+                minimum_speed_factor: 0.40,
+                ..SteeringConfig::default()
+            },
+            drivetrain: DrivetrainConfig {
+                engine: EngineConfig {
+                    peak_torque_nm: 600.0,
+                    peak_torque_rpm: 4_500.0,
+                    redline_rpm: 7_500.0,
+                    idle_torque_fraction: 0.50,
+                    redline_torque_fraction: 0.70,
+                    engine_brake_torque_nm: 80.0,
+                    ..EngineConfig::default()
+                },
+                transmission: TransmissionConfig {
+                    final_drive_ratio: 3.50,
+                    forward_gears: [3.20, 2.10, 1.50, 1.15, 0.92, 0.78],
+                    forward_gear_count: 5,
+                    shift_up_rpm: 6_500.0,
+                    shift_down_rpm: 3_000.0,
+                    clutch_coupling_speed_mps: 2.5,
+                    ..TransmissionConfig::default()
+                },
+                brake_force_newtons: 18_000.0,
+                handbrake_force_newtons: 14_000.0,
+                drivetrain_efficiency: 0.92,
+                ..DrivetrainConfig::default()
+            },
+            stability: StabilityConfig {
+                anti_roll_force_n_per_ratio: 12_000.0,
+                park_hold_force_newtons: 6_000.0,
+                low_speed_traction_boost: 1.50,
+                low_speed_traction_speed_threshold_mps: 4.0,
+                yaw_stability_torque_nm_per_radps: 2_800.0,
+                yaw_stability_speed_threshold_mps: 5.0,
+                airborne_upright_torque_nm_per_rad: 2_000.0,
+                ..StabilityConfig::default()
+            },
+            aerodynamics: AerodynamicsConfig {
+                drag_force_per_speed_sq: 0.65,
+                downforce_per_speed_sq: 0.30,
+            },
+        }
+    }
+
+    /// Simulation preset — realistic torque curve, nuanced grip, minimal assists.
+    ///
+    /// Suitable for Forza/Gran Turismo-style games or racing sims.
+    /// Realistic mass, moderate torque, subtle stability aids, load-sensitive tires.
+    pub fn simulation_preset() -> Self {
+        Self {
+            mass_kg: 1_450.0,
+            angular_inertia_kgm2: Vec3::new(900.0, 1_100.0, 1_400.0),
+            center_of_mass_offset: Vec3::new(0.0, -0.32, 0.0),
+            steering: SteeringConfig {
+                max_angle_rad: 28.0_f32.to_radians(),
+                steer_rate_rad_per_sec: 2.4,
+                speed_reduction_start_mps: 10.0,
+                speed_reduction_end_mps: 28.0,
+                minimum_speed_factor: 0.30,
+                ..SteeringConfig::default()
+            },
+            drivetrain: DrivetrainConfig {
+                engine: EngineConfig {
+                    peak_torque_nm: 380.0,
+                    peak_torque_rpm: 4_000.0,
+                    redline_rpm: 6_500.0,
+                    idle_torque_fraction: 0.40,
+                    redline_torque_fraction: 0.58,
+                    engine_brake_torque_nm: 120.0,
+                    ..EngineConfig::default()
+                },
+                transmission: TransmissionConfig {
+                    final_drive_ratio: 3.90,
+                    forward_gears: [3.50, 2.30, 1.65, 1.25, 1.00, 0.85],
+                    forward_gear_count: 6,
+                    shift_up_rpm: 6_000.0,
+                    shift_down_rpm: 2_800.0,
+                    clutch_coupling_speed_mps: 4.5,
+                    ..TransmissionConfig::default()
+                },
+                brake_force_newtons: 14_000.0,
+                handbrake_force_newtons: 10_000.0,
+                drivetrain_efficiency: 0.87,
+                ..DrivetrainConfig::default()
+            },
+            stability: StabilityConfig {
+                anti_roll_force_n_per_ratio: 5_000.0,
+                park_hold_force_newtons: 4_000.0,
+                low_speed_traction_boost: 1.10,
+                low_speed_traction_speed_threshold_mps: 2.5,
+                yaw_stability_torque_nm_per_radps: 800.0,
+                yaw_stability_speed_threshold_mps: 10.0,
+                airborne_upright_torque_nm_per_rad: 400.0,
+                ..StabilityConfig::default()
+            },
+            aerodynamics: AerodynamicsConfig {
+                drag_force_per_speed_sq: 1.10,
+                downforce_per_speed_sq: 0.15,
+            },
+        }
+    }
+
+    /// Off-road preset — long-travel suspension, high traction, strong hill-hold.
+    ///
+    /// Suitable for rally, off-road, or adventure driving.
+    /// Low gearing, high torque at low RPM, strong anti-roll, generous traction assists.
+    pub fn offroad_preset() -> Self {
+        Self {
+            mass_kg: 1_600.0,
+            angular_inertia_kgm2: Vec3::new(1_000.0, 1_200.0, 1_500.0),
+            center_of_mass_offset: Vec3::new(0.0, -0.50, 0.0),
+            steering: SteeringConfig {
+                max_angle_rad: 26.0_f32.to_radians(),
+                steer_rate_rad_per_sec: 2.2,
+                speed_reduction_start_mps: 8.0,
+                speed_reduction_end_mps: 18.0,
+                minimum_speed_factor: 0.55,
+                ..SteeringConfig::default()
+            },
+            drivetrain: DrivetrainConfig {
+                engine: EngineConfig {
+                    peak_torque_nm: 520.0,
+                    peak_torque_rpm: 2_800.0,
+                    redline_rpm: 5_000.0,
+                    idle_torque_fraction: 0.65,
+                    redline_torque_fraction: 0.60,
+                    engine_brake_torque_nm: 90.0,
+                    ..EngineConfig::default()
+                },
+                transmission: TransmissionConfig {
+                    final_drive_ratio: 5.50,
+                    forward_gears: [4.20, 2.60, 1.75, 1.30, 1.00, 0.82],
+                    forward_gear_count: 5,
+                    shift_up_rpm: 4_200.0,
+                    shift_down_rpm: 2_000.0,
+                    clutch_coupling_speed_mps: 1.5,
+                    ..TransmissionConfig::default()
+                },
+                brake_force_newtons: 12_000.0,
+                handbrake_force_newtons: 9_000.0,
+                differential: DifferentialConfig {
+                    mode: crate::DifferentialMode::LimitedSlip,
+                    limited_slip_load_bias: 0.65,
+                },
+                drivetrain_efficiency: 0.88,
+                ..DrivetrainConfig::default()
+            },
+            stability: StabilityConfig {
+                anti_roll_force_n_per_ratio: 10_000.0,
+                park_hold_force_newtons: 14_000.0,
+                park_hold_speed_threshold_mps: 1.8,
+                low_speed_traction_boost: 1.60,
+                low_speed_traction_speed_threshold_mps: 3.5,
+                yaw_stability_torque_nm_per_radps: 1_800.0,
+                yaw_stability_speed_threshold_mps: 6.0,
+                airborne_upright_torque_nm_per_rad: 1_500.0,
+                ..StabilityConfig::default()
+            },
+            aerodynamics: AerodynamicsConfig {
+                drag_force_per_speed_sq: 0.75,
+                downforce_per_speed_sq: 0.05,
+            },
+        }
+    }
+}
+
+/// Marker component — insert on a chassis entity to reset its drivetrain
+/// (gear, engine RPM) and all associated wheel states (spin speed, slip, etc.)
+/// back to defaults.  The plugin removes the marker after processing.
+#[derive(Component, Reflect, Debug, Clone, Copy, Default)]
+#[reflect(Component, Debug)]
+pub struct GroundVehicleReset;
 
 #[derive(Component, Reflect, Debug, Clone, Copy, Default)]
 #[reflect(Component, Debug)]

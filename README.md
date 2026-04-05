@@ -107,6 +107,7 @@ For examples and crate-local labs, `GroundVehiclePlugin::default()` is the alway
 | `GroundVehicleWheelState` | Per-wheel runtime contact, load, slip, force, steer, and spin state |
 | `GroundVehicleTelemetry` | Chassis-level runtime speed, drift, grounded-wheel, normal, engine RPM, and selected-gear aggregation |
 | `GroundVehicleSurface` | Optional surface multipliers for grip, rolling drag, and braking |
+| `GroundVehicleReset` | Marker component: insert to teleport the vehicle and zero its velocities and wheel state |
 | `GroundVehicleDebugDraw` | Runtime gizmo toggles for suspension, contact, force, and slip vectors |
 | `SteeringConfig`, `DrivetrainConfig`, `EngineConfig`, `TransmissionConfig`, `DifferentialConfig`, `SuspensionConfig`, `TireGripConfig`, `MagicFormulaConfig`, `StabilityConfig`, `AerodynamicsConfig` | Tunable sub-configs used by authored chassis and wheel data |
 | `WheelGroundedChanged`, `VehicleBecameAirborne`, `VehicleLanded`, `DriftStateChanged` | Optional cross-crate messages for gameplay reactions, UI, VFX, or tuning tools |

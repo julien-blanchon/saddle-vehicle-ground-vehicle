@@ -49,8 +49,10 @@ fn drive_wheel_rpm_for_side(
     drive_side: Option<WheelSide>,
     wheels: &Query<(&GroundVehicleWheel, &GroundVehicleWheelState)>,
 ) -> Option<f32> {
-    let mut rpm_sum = 0.0;
-    let mut count = 0.0;
+    let mut grounded_rpm_sum = 0.0;
+    let mut grounded_count = 0.0;
+    let mut all_rpm_sum = 0.0;
+    let mut all_count = 0.0;
 
     for (wheel, state) in wheels.iter() {
         if wheel.chassis != chassis || wheel.drive_factor <= 0.0 {
@@ -63,11 +65,25 @@ fn drive_wheel_rpm_for_side(
             continue;
         }
 
-        rpm_sum += state.spin_speed_rad_per_sec.abs() * 60.0 / std::f32::consts::TAU;
-        count += 1.0;
+        let rpm = state.spin_speed_rad_per_sec.abs() * 60.0 / std::f32::consts::TAU;
+        all_rpm_sum += rpm;
+        all_count += 1.0;
+        if state.grounded {
+            grounded_rpm_sum += rpm;
+            grounded_count += 1.0;
+        }
     }
 
-    (count > 0.0).then_some(rpm_sum / count)
+    // Prefer grounded wheels — airborne wheels spin freely and inflate the
+    // average, causing inappropriate upshifts.  Fall back to all drive
+    // wheels when none are grounded (fully airborne).
+    if grounded_count > 0.0 {
+        Some(grounded_rpm_sum / grounded_count)
+    } else if all_count > 0.0 {
+        Some(all_rpm_sum / all_count)
+    } else {
+        None
+    }
 }
 
 fn select_gear(
@@ -182,9 +198,9 @@ pub(crate) fn update_drivetrain_state(
         );
         let coupling = if internal.grounded_wheels > 0 {
             (forward_speed_mps.abs() / transmission.clutch_coupling_speed_mps.max(0.1))
-                .clamp(0.2, 1.0)
+                .clamp(0.5, 1.0)
         } else {
-            0.08
+            0.15
         };
         let preview_rpm = free_rev_target.lerp(coupled_rpm, coupling).clamp(
             vehicle.drivetrain.engine.idle_rpm,

@@ -35,18 +35,18 @@ fn setup(
     // ---------------------------------------------------------------------------
     let vehicle = GroundVehicle {
         mass_kg: 1_350.0,                                       // default
-        angular_inertia_kgm2: Vec3::new(1_200.0, 1_500.0, 1_800.0),
-        center_of_mass_offset: Vec3::ZERO,
+        angular_inertia_kgm2: Vec3::new(900.0, 1_100.0, 1_400.0),
+        center_of_mass_offset: Vec3::new(0.0, -0.38, 0.0),
         steering: SteeringConfig {
             max_angle_rad: 29.0_f32.to_radians(),               // 29 deg lock
             ..default()
         },
         drivetrain: DrivetrainConfig {
             engine: EngineConfig {
-                peak_torque_nm: 250.0,
-                peak_torque_rpm: 3_900.0,
-                redline_rpm: 6_400.0,
-                engine_brake_torque_nm: 85.0,
+                peak_torque_nm: 380.0,
+                peak_torque_rpm: 4_200.0,
+                redline_rpm: 6_500.0,
+                engine_brake_torque_nm: 90.0,
                 ..default()
             },
             transmission: TransmissionConfig {
@@ -83,7 +83,7 @@ fn setup(
             ScriptedControlOverride::default(),
             avian3d::prelude::Mass(vehicle.mass_kg),
             avian3d::prelude::AngularInertia::new(vehicle.angular_inertia_kgm2),
-            avian3d::prelude::CenterOfMass::new(0.0, 0.0, 0.0),
+            avian3d::prelude::CenterOfMass::new(0.0, -0.38, 0.0),
             ResetPose {
                 transform,
                 linear_velocity: Vec3::ZERO,
@@ -103,25 +103,23 @@ fn setup(
         ))
         .id();
 
-    // Decorative roof
-    commands.spawn((
-        Name::new("Basic Hatchback Roof"),
-        Mesh3d(meshes.add(Cuboid::new(
-            chassis_size.x * 0.72,
-            chassis_size.y * 0.42,
-            chassis_size.z * 0.45,
-        ))),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: Color::srgb(0.82, 0.21, 0.19).mix(&Color::WHITE, 0.18),
-            perceptual_roughness: 0.46,
-            ..default()
-        })),
-        Transform::from_translation(
-            transform.translation
-                + transform.rotation * Vec3::new(0.0, chassis_size.y * 0.46, 0.12),
-        )
-        .with_rotation(transform.rotation),
-    ));
+    // Decorative roof — parented to chassis so it follows the vehicle
+    commands.entity(chassis_entity).with_children(|parent| {
+        parent.spawn((
+            Name::new("Basic Hatchback Roof"),
+            Mesh3d(meshes.add(Cuboid::new(
+                chassis_size.x * 0.72,
+                chassis_size.y * 0.42,
+                chassis_size.z * 0.45,
+            ))),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: Color::srgb(0.82, 0.21, 0.19).mix(&Color::WHITE, 0.18),
+                perceptual_roughness: 0.46,
+                ..default()
+            })),
+            Transform::from_xyz(0.0, chassis_size.y * 0.46, 0.12),
+        ));
+    });
 
     // ---------------------------------------------------------------------------
     // Suspension & tire configs per axle
@@ -153,14 +151,15 @@ fn setup(
     // Wheels — front axle (axle 0): steered + driven
     // ---------------------------------------------------------------------------
     let wheel_specs: [(u8, WheelSide, Vec3, f32, f32, f32, f32, f32, f32, f32, SuspensionConfig, TireGripConfig); 4] = [
-        // Front-left
+        //                                                                     steer drive brake handbrake
+        // Front-left (steered + driven)
         (0, WheelSide::Left,  Vec3::new(-0.82, -0.20, -1.24), 0.36, 0.24, 1.02, 1.0, 1.0, 1.0, 0.0, front_suspension, front_tire),
-        // Front-right
+        // Front-right (steered + driven)
         (0, WheelSide::Right, Vec3::new( 0.82, -0.20, -1.24), 0.36, 0.24, 1.02, 1.0, 1.0, 1.0, 0.0, front_suspension, front_tire),
-        // Rear-left
-        (1, WheelSide::Left,  Vec3::new(-0.82, -0.20,  1.20), 0.37, 0.26, 1.10, 0.0, 0.0, 1.0, 1.0, rear_suspension, rear_tire),
-        // Rear-right
-        (1, WheelSide::Right, Vec3::new( 0.82, -0.20,  1.20), 0.37, 0.26, 1.10, 0.0, 0.0, 1.0, 1.0, rear_suspension, rear_tire),
+        // Rear-left (driven + handbrake)
+        (1, WheelSide::Left,  Vec3::new(-0.82, -0.20,  1.20), 0.37, 0.26, 1.10, 0.0, 1.0, 1.0, 1.0, rear_suspension, rear_tire),
+        // Rear-right (driven + handbrake)
+        (1, WheelSide::Right, Vec3::new( 0.82, -0.20,  1.20), 0.37, 0.26, 1.10, 0.0, 1.0, 1.0, 1.0, rear_suspension, rear_tire),
     ];
 
     let wheel_color = Color::srgb(0.12, 0.12, 0.13);

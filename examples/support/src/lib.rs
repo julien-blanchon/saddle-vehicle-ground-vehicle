@@ -11,9 +11,9 @@ use bevy_enhanced_input::prelude::{
 use ground_vehicle::{
     AerodynamicsConfig, DifferentialConfig, DifferentialMode, DrivetrainConfig, EngineConfig,
     GroundVehicle, GroundVehicleControl, GroundVehicleDebugDraw, GroundVehiclePlugin,
-    GroundVehicleSurface, GroundVehicleTelemetry, GroundVehicleWheel, GroundVehicleWheelVisual,
-    MagicFormulaConfig, ReversePolicy, StabilityConfig, SteeringConfig, SteeringMode,
-    SuspensionConfig, TireGripConfig, TireModel, TransmissionConfig, WheelSide,
+    GroundVehicleSurface, GroundVehicleSystems, GroundVehicleTelemetry, GroundVehicleWheel,
+    GroundVehicleWheelVisual, MagicFormulaConfig, ReversePolicy, StabilityConfig, SteeringConfig,
+    SteeringMode, SuspensionConfig, TireGripConfig, TireModel, TransmissionConfig, WheelSide,
 };
 use saddle_pane::prelude::*;
 
@@ -224,6 +224,11 @@ pub fn configure_example_app(app: &mut App, title: &'static str, debug_draw: boo
         .add_observer(clear_handbrake_on_complete)
         .add_observer(reset_vehicle)
         .add_systems(
+            FixedUpdate,
+            apply_scripted_control_overrides
+                .before(GroundVehicleSystems::InputAdaptation),
+        )
+        .add_systems(
             Update,
             (
                 apply_scripted_control_overrides,
@@ -317,7 +322,9 @@ pub fn spawn_overlay(commands: &mut Commands, title: &'static str) {
     commands.spawn((
         Name::new("Overlay"),
         OverlayText,
-        Text::new(format!("{title}\n")),
+        Text::new(format!(
+            "{title}\n\nControls:\n  W/S  Throttle / Reverse\n  A/D  Steer\n  Space  Brake\n  Shift  Handbrake\n  R  Reset vehicle\n"
+        )),
         Node {
             position_type: PositionType::Absolute,
             left: px(18.0),
@@ -325,7 +332,7 @@ pub fn spawn_overlay(commands: &mut Commands, title: &'static str) {
             ..default()
         },
         TextFont {
-            font_size: 18.0,
+            font_size: 16.0,
             ..default()
         },
         TextColor(Color::WHITE),
@@ -413,10 +420,10 @@ pub fn spawn_compact_car_demo(
         },
         drivetrain: DrivetrainConfig {
             engine: EngineConfig {
-                peak_torque_nm: 250.0,
-                peak_torque_rpm: 3_900.0,
-                redline_rpm: 6_400.0,
-                engine_brake_torque_nm: 85.0,
+                peak_torque_nm: 380.0,
+                peak_torque_rpm: 4_200.0,
+                redline_rpm: 6_500.0,
+                engine_brake_torque_nm: 90.0,
                 ..default()
             },
             transmission: TransmissionConfig {
@@ -424,8 +431,8 @@ pub fn spawn_compact_car_demo(
                 forward_gears: [3.60, 2.19, 1.46, 1.09, 0.87, 0.72],
                 forward_gear_count: 5,
                 reverse_ratio: 3.18,
-                shift_up_rpm: 5_700.0,
-                shift_down_rpm: 2_450.0,
+                shift_up_rpm: 5_800.0,
+                shift_down_rpm: 2_500.0,
                 ..default()
             },
             brake_force_newtons: 15_000.0,
@@ -650,24 +657,24 @@ fn spawn_vehicle(
     }
     let chassis_entity = chassis.id();
 
+    // Roof — parented to chassis so it follows the vehicle
     let roof_height = chassis_size.y * 0.46;
-    commands.spawn((
-        Name::new(format!("{name} Roof")),
-        Mesh3d(meshes.add(Cuboid::new(
-            chassis_size.x * 0.72,
-            chassis_size.y * 0.42,
-            chassis_size.z * 0.45,
-        ))),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: body_color.mix(&Color::WHITE, 0.18),
-            perceptual_roughness: 0.46,
-            ..default()
-        })),
-        Transform::from_translation(
-            transform.translation + transform.rotation * Vec3::new(0.0, roof_height, 0.12),
-        )
-        .with_rotation(transform.rotation),
-    ));
+    commands.entity(chassis_entity).with_children(|parent| {
+        parent.spawn((
+            Name::new(format!("{name} Roof")),
+            Mesh3d(meshes.add(Cuboid::new(
+                chassis_size.x * 0.72,
+                chassis_size.y * 0.42,
+                chassis_size.z * 0.45,
+            ))),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: body_color.mix(&Color::WHITE, 0.18),
+                perceptual_roughness: 0.46,
+                ..default()
+            })),
+            Transform::from_xyz(0.0, roof_height, 0.12),
+        ));
+    });
 
     for (index, wheel_spec) in wheels.into_iter().enumerate() {
         let visual_entity = commands
@@ -770,7 +777,7 @@ fn compact_car_wheels() -> Vec<WheelSpec> {
             width_m: 0.26,
             rotational_inertia_kgm2: 1.10,
             steer_factor: 0.0,
-            drive_factor: 0.0,
+            drive_factor: 1.0,
             brake_factor: 1.0,
             handbrake_factor: 1.0,
             suspension: rear_suspension,
@@ -790,7 +797,7 @@ fn compact_car_wheels() -> Vec<WheelSpec> {
                 width_m: 0.26,
                 rotational_inertia_kgm2: 1.10,
                 steer_factor: 0.0,
-                drive_factor: 0.0,
+                drive_factor: 1.0,
                 brake_factor: 1.0,
                 handbrake_factor: 1.0,
                 suspension: rear_suspension,

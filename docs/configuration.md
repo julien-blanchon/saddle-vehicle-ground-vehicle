@@ -16,8 +16,8 @@ Defaults below refer to each type's `Default` implementation unless noted otherw
 | Field | Type | Unit | Default | Practical range | Effect | Common failure when mis-tuned |
 | --- | --- | --- | --- | --- | --- | --- |
 | `mass_kg` | `f32` | kg | `1300.0` | `> 0` | Chassis mass used by Avian | Too low feels floaty; too high feels dead |
-| `angular_inertia_kgm2` | `Vec3` | kg m^2 | `(650, 820, 1050)` | each axis `> 0` | Rotational inertia about local X/Y/Z | Too low snaps or rolls violently |
-| `center_of_mass_offset` | `Vec3` | m | `(0.0, -0.35, 0.0)` | finite | Offsets the rigid-body center of mass | Too high causes rollover and curb instability |
+| `angular_inertia_kgm2` | `Vec3` | kg m^2 | `(800, 1000, 1200)` | each axis `> 0` | Rotational inertia about local X/Y/Z | Too low snaps or rolls violently |
+| `center_of_mass_offset` | `Vec3` | m | `(0.0, -0.40, 0.0)` | finite | Offsets the rigid-body center of mass | Too high causes rollover and curb instability |
 | `steering` | `SteeringConfig` | n/a | default | see below | Steering mode and angle response | Wrong mode or weak angle cap makes turning ineffective |
 | `drivetrain` | `DrivetrainConfig` | n/a | default | see below | Force delivery and brake policy | Too much force overwhelms grip and causes wheel-hop-like behavior |
 | `stability` | `StabilityConfig` | n/a | default | see below | Assists, anti-roll, drift thresholds | Over-tuned assists make the vehicle feel glued and artificial |

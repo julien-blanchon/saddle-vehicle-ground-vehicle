@@ -100,12 +100,12 @@ impl Default for EngineConfig {
     fn default() -> Self {
         Self {
             idle_rpm: 900.0,
-            peak_torque_nm: 420.0,
+            peak_torque_nm: 480.0,
             peak_torque_rpm: 4_200.0,
             redline_rpm: 6_800.0,
-            idle_torque_fraction: 0.42,
+            idle_torque_fraction: 0.45,
             redline_torque_fraction: 0.62,
-            engine_brake_torque_nm: 110.0,
+            engine_brake_torque_nm: 100.0,
         }
     }
 }
@@ -178,7 +178,7 @@ impl Default for DrivetrainConfig {
             transmission: TransmissionConfig::default(),
             differential: DifferentialConfig::default(),
             reverse_policy: ReversePolicy::StopThenReverse,
-            drivetrain_efficiency: 0.88,
+            drivetrain_efficiency: 0.90,
             brake_force_newtons: 12_000.0,
             handbrake_force_newtons: 10_500.0,
             reverse_speed_threshold_mps: 1.25,
@@ -312,14 +312,14 @@ pub struct StabilityConfig {
 impl Default for StabilityConfig {
     fn default() -> Self {
         Self {
-            anti_roll_force_n_per_ratio: 3_000.0,
-            park_hold_force_newtons: 4_500.0,
+            anti_roll_force_n_per_ratio: 8_000.0,
+            park_hold_force_newtons: 5_500.0,
             park_hold_speed_threshold_mps: 0.65,
-            low_speed_traction_boost: 1.25,
-            low_speed_traction_speed_threshold_mps: 3.0,
-            yaw_stability_torque_nm_per_radps: 1_500.0,
-            yaw_stability_speed_threshold_mps: 8.0,
-            airborne_upright_torque_nm_per_rad: 850.0,
+            low_speed_traction_boost: 1.30,
+            low_speed_traction_speed_threshold_mps: 3.5,
+            yaw_stability_torque_nm_per_radps: 2_000.0,
+            yaw_stability_speed_threshold_mps: 6.0,
+            airborne_upright_torque_nm_per_rad: 1_200.0,
             drift_entry_ratio: 0.34,
             drift_exit_ratio: 0.24,
         }
@@ -335,8 +335,8 @@ pub struct AerodynamicsConfig {
 impl Default for AerodynamicsConfig {
     fn default() -> Self {
         Self {
-            drag_force_per_speed_sq: 1.05,
-            downforce_per_speed_sq: 0.18,
+            drag_force_per_speed_sq: 0.85,
+            downforce_per_speed_sq: 0.22,
         }
     }
 }

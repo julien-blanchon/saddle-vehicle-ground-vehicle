@@ -115,7 +115,10 @@ fn setup(
     };
 
     let chassis_size = Vec3::new(1.75, 0.75, 3.25);
-    let transform = Transform::from_xyz(0.0, 3.2, 8.0);
+    // Spawn on the main ramp (centered at y=1.4, tilted -0.26 rad around X).
+    // The ramp surface rises toward -Z, so z=-2.0 puts us partway up the slope.
+    let transform = Transform::from_xyz(0.0, 3.6, -2.0)
+        .with_rotation(Quat::from_rotation_x(-0.26));
 
     // ---------------------------------------------------------------------------
     // Spawn chassis
@@ -153,24 +156,23 @@ fn setup(
         ))
         .id();
 
-    commands.spawn((
-        Name::new("Slope Rover Roof"),
-        Mesh3d(meshes.add(Cuboid::new(
-            chassis_size.x * 0.72,
-            chassis_size.y * 0.42,
-            chassis_size.z * 0.45,
-        ))),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: Color::srgb(0.72, 0.78, 0.33).mix(&Color::WHITE, 0.18),
-            perceptual_roughness: 0.46,
-            ..default()
-        })),
-        Transform::from_translation(
-            transform.translation
-                + transform.rotation * Vec3::new(0.0, chassis_size.y * 0.46, 0.12),
-        )
-        .with_rotation(transform.rotation),
-    ));
+    // Roof — parented to chassis so it follows the vehicle
+    commands.entity(chassis_entity).with_children(|parent| {
+        parent.spawn((
+            Name::new("Slope Rover Roof"),
+            Mesh3d(meshes.add(Cuboid::new(
+                chassis_size.x * 0.72,
+                chassis_size.y * 0.42,
+                chassis_size.z * 0.45,
+            ))),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: Color::srgb(0.72, 0.78, 0.33).mix(&Color::WHITE, 0.18),
+                perceptual_roughness: 0.46,
+                ..default()
+            })),
+            Transform::from_xyz(0.0, chassis_size.y * 0.46, 0.12),
+        ));
+    });
 
     // ---------------------------------------------------------------------------
     // Long-travel suspension — high droop and compression for articulation

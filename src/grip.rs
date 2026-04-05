@@ -193,9 +193,14 @@ pub(crate) fn apply_tire_forces(
         let slip_angle_rad =
             lateral_speed_mps.atan2(longitudinal_speed_mps.abs().max(slip_reference * 0.5));
 
-        let passive_longitudinal = -longitudinal_speed_mps
+        // Stiffness-based drag at low speed, clamped to a fraction of tire load
+        // at higher speeds so it behaves like real rolling resistance and
+        // doesn't limit the car's top speed.
+        let passive_raw = -longitudinal_speed_mps
             * wheel.tire.longitudinal_stiffness
             * surface.rolling_drag_scale;
+        let max_passive = state.load_newtons * 0.15;
+        let passive_longitudinal = passive_raw.clamp(-max_passive, max_passive);
         let rolling_resistance = -longitudinal_speed_mps.signum()
             * wheel.tire.rolling_resistance_force_newtons
             * surface.rolling_drag_scale;
@@ -267,6 +272,15 @@ pub(crate) fn apply_tire_forces(
             (drive_torque_nm + brake_torque_nm + rolling_drag_torque_nm - patch_torque_nm)
                 / rotational_inertia
                 * dt;
+        // Pull wheel spin toward ground-implied speed.  This prevents
+        // runaway wheelspin from the passive-longitudinal drag feedback
+        // while preserving the car-level force balance.
+        let ground_spin_rad_per_sec = longitudinal_speed_mps / wheel.radius_m.max(0.05);
+        let spin_error = state.spin_speed_rad_per_sec - ground_spin_rad_per_sec;
+        let correction = spin_error
+            * (wheel.tire.longitudinal_stiffness * wheel.radius_m / rotational_inertia).min(60.0)
+            * dt;
+        state.spin_speed_rad_per_sec -= correction;
         if state.spin_speed_rad_per_sec.abs() < 0.01 && longitudinal_speed_mps.abs() < 0.1 {
             state.spin_speed_rad_per_sec = 0.0;
         }
