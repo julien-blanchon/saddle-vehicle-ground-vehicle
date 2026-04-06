@@ -1,6 +1,7 @@
 mod components;
 mod config;
 mod debug;
+mod drift;
 mod drivetrain;
 mod grip;
 mod messages;
@@ -10,20 +11,24 @@ mod systems;
 mod visuals;
 
 pub(crate) use components::{
-    AxleAccumulator, GroundVehicleInternal, GroundVehicleResolvedControl,
-    GroundVehicleWheelInternal,
+    AxleAccumulator, GroundVehicleInternal, GroundVehicleResolvedIntent, GroundVehicleWheelInternal,
 };
 pub use components::{
-    GroundVehicle, GroundVehicleControl, GroundVehicleDebugDraw, GroundVehicleReset,
-    GroundVehicleSurface, GroundVehicleTelemetry, GroundVehicleWheel, GroundVehicleWheelState,
-    GroundVehicleWheelVisual, WheelSide,
+    GroundVehicle, GroundVehicleDebugDraw, GroundVehicleReset, GroundVehicleSurface,
+    GroundVehicleTelemetry, GroundVehicleWheel, GroundVehicleWheelState, GroundVehicleWheelVisual,
+    VehicleIntent, WheelSide,
 };
 pub use config::{
-    AerodynamicsConfig, DifferentialConfig, DifferentialMode, DrivetrainConfig, EngineConfig,
-    MagicFormulaConfig, ReversePolicy, StabilityConfig, SteeringConfig, SteeringMode,
-    SuspensionConfig, TireGripConfig, TireModel, TransmissionConfig,
+    AerodynamicsConfig, AutomaticGearboxConfig, AxleDriveConfig, DifferentialConfig,
+    DifferentialMode, DirectionChangeConfig, DirectionChangePolicy, DriveModel, EngineConfig,
+    FixedGearConfig, GearModel, MagicFormulaConfig, PowertrainConfig, StabilityConfig,
+    SteeringConfig, SteeringMode, SuspensionConfig, TireGripConfig, TireModel, TrackDriveConfig,
 };
-pub use messages::{DriftStateChanged, VehicleBecameAirborne, VehicleLanded, WheelGroundedChanged};
+pub use drift::{
+    DriftStateChanged, GroundVehicleDriftConfig, GroundVehicleDriftPlugin,
+    GroundVehicleDriftSystems, GroundVehicleDriftTelemetry,
+};
+pub use messages::{VehicleBecameAirborne, VehicleLanded, WheelGroundedChanged};
 
 use bevy::{
     app::{FixedUpdate, PostStartup},
@@ -39,7 +44,7 @@ pub enum GroundVehicleSystems {
     InputAdaptation,
     Suspension,
     Steering,
-    Drivetrain,
+    Powertrain,
     Grip,
     Stability,
     Telemetry,
@@ -90,14 +95,18 @@ impl Plugin for GroundVehiclePlugin {
             .add_message::<WheelGroundedChanged>()
             .add_message::<VehicleBecameAirborne>()
             .add_message::<VehicleLanded>()
-            .add_message::<DriftStateChanged>()
             .register_type::<AerodynamicsConfig>()
+            .register_type::<AutomaticGearboxConfig>()
+            .register_type::<AxleDriveConfig>()
             .register_type::<DifferentialConfig>()
             .register_type::<DifferentialMode>()
-            .register_type::<DrivetrainConfig>()
+            .register_type::<DirectionChangeConfig>()
+            .register_type::<DirectionChangePolicy>()
+            .register_type::<DriveModel>()
             .register_type::<EngineConfig>()
+            .register_type::<FixedGearConfig>()
+            .register_type::<GearModel>()
             .register_type::<GroundVehicle>()
-            .register_type::<GroundVehicleControl>()
             .register_type::<GroundVehicleDebugDraw>()
             .register_type::<GroundVehicleReset>()
             .register_type::<GroundVehicleSurface>()
@@ -106,14 +115,15 @@ impl Plugin for GroundVehiclePlugin {
             .register_type::<GroundVehicleWheelState>()
             .register_type::<GroundVehicleWheelVisual>()
             .register_type::<MagicFormulaConfig>()
-            .register_type::<ReversePolicy>()
+            .register_type::<PowertrainConfig>()
             .register_type::<SteeringConfig>()
             .register_type::<SteeringMode>()
             .register_type::<StabilityConfig>()
             .register_type::<SuspensionConfig>()
             .register_type::<TireGripConfig>()
             .register_type::<TireModel>()
-            .register_type::<TransmissionConfig>()
+            .register_type::<TrackDriveConfig>()
+            .register_type::<VehicleIntent>()
             .register_type::<WheelSide>()
             .add_systems(self.activate_schedule, systems::activate_runtime)
             .add_systems(self.deactivate_schedule, systems::deactivate_runtime)
@@ -123,7 +133,7 @@ impl Plugin for GroundVehiclePlugin {
                     GroundVehicleSystems::InputAdaptation,
                     GroundVehicleSystems::Suspension,
                     GroundVehicleSystems::Steering,
-                    GroundVehicleSystems::Drivetrain,
+                    GroundVehicleSystems::Powertrain,
                     GroundVehicleSystems::Grip,
                     GroundVehicleSystems::Stability,
                     GroundVehicleSystems::Telemetry,
@@ -140,7 +150,7 @@ impl Plugin for GroundVehiclePlugin {
                     systems::sync_ground_vehicle_properties
                         .in_set(GroundVehicleSystems::InputAdaptation),
                     systems::sync_new_wheel_state.in_set(GroundVehicleSystems::InputAdaptation),
-                    drivetrain::resolve_control_intent
+                    drivetrain::resolve_vehicle_intent
                         .in_set(GroundVehicleSystems::InputAdaptation),
                     (
                         suspension::reset_chassis_accumulators,
@@ -150,11 +160,11 @@ impl Plugin for GroundVehiclePlugin {
                         .in_set(GroundVehicleSystems::Suspension),
                     steering::update_steering_angles.in_set(GroundVehicleSystems::Steering),
                     (
-                        drivetrain::update_drivetrain_state,
+                        drivetrain::update_powertrain_state,
                         drivetrain::resolve_wheel_force_requests,
                     )
                         .chain()
-                        .in_set(GroundVehicleSystems::Drivetrain),
+                        .in_set(GroundVehicleSystems::Powertrain),
                     grip::apply_tire_forces.in_set(GroundVehicleSystems::Grip),
                     (
                         systems::apply_stability_helpers,

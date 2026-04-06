@@ -15,10 +15,10 @@ Keys:
 - `3`: cargo truck
 - `4`: skid vehicle
 - `5`: slope rover
-- `W/S`: throttle and reverse
+- `W/S`: drive and reverse intent
 - `A/D`: steering or turn demand
 - `Space`: brake
-- `Shift`: handbrake
+- `Shift`: auxiliary brake
 - `R`: reset active vehicle
 
 ## E2E

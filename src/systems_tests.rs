@@ -10,11 +10,11 @@ use bevy::{
 };
 
 use crate::{
-    DifferentialConfig, DifferentialMode, DrivetrainConfig, GroundVehicle, GroundVehicleControl,
-    GroundVehiclePlugin, GroundVehicleSurface, GroundVehicleTelemetry, GroundVehicleWheel,
-    GroundVehicleWheelState, GroundVehicleWheelVisual, ReversePolicy, SteeringConfig,
-    VehicleBecameAirborne, VehicleLanded, WheelGroundedChanged, WheelSide, drivetrain, grip,
-    steering, suspension,
+    DifferentialConfig, DifferentialMode, DirectionChangeConfig, DirectionChangePolicy, DriveModel,
+    GroundVehicle, GroundVehiclePlugin, GroundVehicleSurface, GroundVehicleTelemetry,
+    GroundVehicleWheel, GroundVehicleWheelState, GroundVehicleWheelVisual, PowertrainConfig,
+    SteeringConfig, TrackDriveConfig, VehicleBecameAirborne, VehicleIntent, VehicleLanded,
+    WheelGroundedChanged, WheelSide, drivetrain, grip, steering, suspension,
 };
 
 #[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
@@ -145,14 +145,14 @@ fn ackermann_geometry_derives_from_wheel_layout() {
 }
 
 #[test]
-fn reverse_policy_brakes_before_reverse_when_requested() {
-    let drivetrain = DrivetrainConfig {
-        reverse_policy: ReversePolicy::StopThenReverse,
-        reverse_speed_threshold_mps: 1.0,
-        ..default()
+fn direction_change_policy_brakes_before_reversing_when_requested() {
+    let direction_change = DirectionChangeConfig {
+        policy: DirectionChangePolicy::StopThenChange,
+        speed_threshold_mps: 1.0,
     };
-    let (throttle, brake) = drivetrain::resolve_reverse_policy(-1.0, 0.0, 4.0, drivetrain);
-    assert_eq!(throttle, 0.0);
+    let (drive, brake) =
+        drivetrain::resolve_direction_change_policy(-1.0, 0.0, 4.0, direction_change);
+    assert_eq!(drive, 0.0);
     assert!(brake > 0.99);
 }
 
@@ -188,42 +188,48 @@ fn limited_slip_prefers_loaded_side_more_than_open_diff() {
 }
 
 #[test]
-fn skid_steer_control_splits_left_and_right_drive() {
+fn track_drive_splits_left_and_right_drive() {
     let mut app = App::new();
     app.world_mut().spawn((
         GroundVehicle {
             steering: SteeringConfig {
-                mode: crate::SteeringMode::SkidSteer,
-                skid_steer_turn_scale: 0.8,
+                mode: crate::SteeringMode::Disabled,
+                ..default()
+            },
+            powertrain: PowertrainConfig {
+                drive_model: DriveModel::Track(TrackDriveConfig {
+                    turn_split: 0.8,
+                    ..default()
+                }),
                 ..default()
             },
             ..default()
         },
-        GroundVehicleControl {
-            throttle: 0.5,
-            steering: 0.75,
+        VehicleIntent {
+            drive: 0.5,
+            turn: 0.75,
             ..default()
         },
-        crate::GroundVehicleResolvedControl::default(),
+        crate::GroundVehicleResolvedIntent::default(),
         avian3d::prelude::LinearVelocity::ZERO,
         Transform::default(),
     ));
 
     let _ = app
         .world_mut()
-        .run_system_once(drivetrain::resolve_control_intent);
+        .run_system_once(drivetrain::resolve_vehicle_intent);
 
     let resolved = {
         let world = app.world_mut();
-        let mut query = world.query::<&crate::GroundVehicleResolvedControl>();
+        let mut query = world.query::<&crate::GroundVehicleResolvedIntent>();
         query
             .single(world)
-            .expect("resolved control should exist for the test vehicle")
+            .expect("resolved intent should exist for the test vehicle")
             .to_owned()
     };
-    assert!(resolved.skid_left < resolved.skid_right);
-    assert!((resolved.skid_left + 0.1).abs() < 0.001);
-    assert!((resolved.skid_right - 1.0).abs() < 0.001);
+    assert!(resolved.left_drive < resolved.right_drive);
+    assert!((resolved.left_drive + 0.1).abs() < 0.001);
+    assert!((resolved.right_drive - 1.0).abs() < 0.001);
 }
 
 #[test]

@@ -3,7 +3,7 @@ use bevy::prelude::*;
 #[derive(Reflect, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SteeringMode {
     Road,
-    SkidSteer,
+    Disabled,
 }
 
 #[derive(Reflect, Debug, Clone, Copy, PartialEq)]
@@ -15,7 +15,6 @@ pub struct SteeringConfig {
     pub speed_reduction_start_mps: f32,
     pub speed_reduction_end_mps: f32,
     pub minimum_speed_factor: f32,
-    pub skid_steer_turn_scale: f32,
     pub wheelbase_override_m: Option<f32>,
     pub track_width_override_m: Option<f32>,
 }
@@ -30,7 +29,6 @@ impl Default for SteeringConfig {
             speed_reduction_start_mps: 12.0,
             speed_reduction_end_mps: 32.0,
             minimum_speed_factor: 0.35,
-            skid_steer_turn_scale: 0.85,
             wheelbase_override_m: None,
             track_width_override_m: None,
         }
@@ -60,9 +58,24 @@ impl Default for DifferentialConfig {
 }
 
 #[derive(Reflect, Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum ReversePolicy {
+pub enum DirectionChangePolicy {
     Immediate,
-    StopThenReverse,
+    StopThenChange,
+}
+
+#[derive(Reflect, Debug, Clone, Copy, PartialEq)]
+pub struct DirectionChangeConfig {
+    pub policy: DirectionChangePolicy,
+    pub speed_threshold_mps: f32,
+}
+
+impl Default for DirectionChangeConfig {
+    fn default() -> Self {
+        Self {
+            policy: DirectionChangePolicy::StopThenChange,
+            speed_threshold_mps: 1.25,
+        }
+    }
 }
 
 #[derive(Reflect, Debug, Clone, Copy, PartialEq)]
@@ -111,18 +124,18 @@ impl Default for EngineConfig {
 }
 
 #[derive(Reflect, Debug, Clone, Copy, PartialEq)]
-pub struct TransmissionConfig {
-    pub automatic: bool,
+pub struct AutomaticGearboxConfig {
     pub forward_gears: [f32; 6],
     pub forward_gear_count: u8,
     pub final_drive_ratio: f32,
     pub reverse_ratio: f32,
     pub shift_up_rpm: f32,
     pub shift_down_rpm: f32,
-    pub clutch_coupling_speed_mps: f32,
+    pub coupling_speed_mps: f32,
+    pub direction_change: DirectionChangeConfig,
 }
 
-impl TransmissionConfig {
+impl AutomaticGearboxConfig {
     pub fn gear_ratio(self, gear: i8) -> f32 {
         match gear.cmp(&0) {
             std::cmp::Ordering::Less => self.reverse_ratio.abs() * self.final_drive_ratio.abs(),
@@ -144,44 +157,123 @@ impl TransmissionConfig {
     }
 }
 
-impl Default for TransmissionConfig {
+impl Default for AutomaticGearboxConfig {
     fn default() -> Self {
         Self {
-            automatic: true,
             forward_gears: [3.45, 2.25, 1.62, 1.22, 0.98, 0.84],
             forward_gear_count: 5,
             final_drive_ratio: 3.85,
             reverse_ratio: 3.10,
             shift_up_rpm: 5_900.0,
             shift_down_rpm: 2_600.0,
-            clutch_coupling_speed_mps: 4.0,
+            coupling_speed_mps: 4.0,
+            direction_change: DirectionChangeConfig::default(),
         }
     }
 }
 
 #[derive(Reflect, Debug, Clone, Copy, PartialEq)]
-pub struct DrivetrainConfig {
-    pub engine: EngineConfig,
-    pub transmission: TransmissionConfig,
-    pub differential: DifferentialConfig,
-    pub reverse_policy: ReversePolicy,
-    pub drivetrain_efficiency: f32,
-    pub brake_force_newtons: f32,
-    pub handbrake_force_newtons: f32,
-    pub reverse_speed_threshold_mps: f32,
+pub struct FixedGearConfig {
+    pub forward_ratio: f32,
+    pub reverse_ratio: f32,
+    pub coupling_speed_mps: f32,
+    pub direction_change: DirectionChangeConfig,
 }
 
-impl Default for DrivetrainConfig {
+impl FixedGearConfig {
+    pub fn gear_ratio(self, gear: i8) -> f32 {
+        match gear.cmp(&0) {
+            std::cmp::Ordering::Less => self.reverse_ratio.abs(),
+            std::cmp::Ordering::Equal => 0.0,
+            std::cmp::Ordering::Greater => self.forward_ratio.abs(),
+        }
+    }
+}
+
+impl Default for FixedGearConfig {
+    fn default() -> Self {
+        Self {
+            forward_ratio: 3.85,
+            reverse_ratio: 3.10,
+            coupling_speed_mps: 4.0,
+            direction_change: DirectionChangeConfig::default(),
+        }
+    }
+}
+
+#[derive(Reflect, Debug, Clone, Copy, PartialEq)]
+pub enum GearModel {
+    Automatic(AutomaticGearboxConfig),
+    Fixed(FixedGearConfig),
+}
+
+impl Default for GearModel {
+    fn default() -> Self {
+        Self::Automatic(AutomaticGearboxConfig::default())
+    }
+}
+
+#[derive(Reflect, Debug, Clone, Copy, PartialEq)]
+pub struct AxleDriveConfig {
+    pub differential: DifferentialConfig,
+    pub drivetrain_efficiency: f32,
+}
+
+impl Default for AxleDriveConfig {
+    fn default() -> Self {
+        Self {
+            differential: DifferentialConfig::default(),
+            drivetrain_efficiency: 0.90,
+        }
+    }
+}
+
+#[derive(Reflect, Debug, Clone, Copy, PartialEq)]
+pub struct TrackDriveConfig {
+    pub differential: DifferentialConfig,
+    pub drivetrain_efficiency: f32,
+    pub turn_split: f32,
+}
+
+impl Default for TrackDriveConfig {
+    fn default() -> Self {
+        Self {
+            differential: DifferentialConfig::default(),
+            drivetrain_efficiency: 0.90,
+            turn_split: 0.85,
+        }
+    }
+}
+
+#[derive(Reflect, Debug, Clone, Copy, PartialEq)]
+pub enum DriveModel {
+    Axle(AxleDriveConfig),
+    Track(TrackDriveConfig),
+}
+
+impl Default for DriveModel {
+    fn default() -> Self {
+        Self::Axle(AxleDriveConfig::default())
+    }
+}
+
+#[derive(Reflect, Debug, Clone, Copy, PartialEq)]
+pub struct PowertrainConfig {
+    pub engine: EngineConfig,
+    pub drive_model: DriveModel,
+    pub gear_model: GearModel,
+    pub brake_force_newtons: f32,
+    pub auxiliary_brake_force_newtons: f32,
+}
+
+impl Default for PowertrainConfig {
     fn default() -> Self {
         Self {
             engine: EngineConfig::default(),
-            transmission: TransmissionConfig::default(),
-            differential: DifferentialConfig::default(),
-            reverse_policy: ReversePolicy::StopThenReverse,
-            drivetrain_efficiency: 0.90,
+            drive_model: DriveModel::default(),
+            gear_model: GearModel::default(),
             brake_force_newtons: 12_000.0,
-            handbrake_force_newtons: 10_500.0,
-            reverse_speed_threshold_mps: 1.25,
+            auxiliary_brake_force_newtons: 10_500.0,
         }
     }
 }
@@ -265,8 +357,8 @@ pub struct TireGripConfig {
     pub lateral_stiffness: f32,
     pub lateral_response_exponent: f32,
     pub rolling_resistance_force_newtons: f32,
-    pub handbrake_lateral_multiplier: f32,
-    pub handbrake_longitudinal_multiplier: f32,
+    pub auxiliary_brake_lateral_multiplier: f32,
+    pub auxiliary_brake_longitudinal_multiplier: f32,
     pub low_speed_lateral_multiplier: f32,
     pub nominal_load_newtons: f32,
     pub load_sensitivity: f32,
@@ -284,8 +376,8 @@ impl Default for TireGripConfig {
             lateral_stiffness: 460.0,
             lateral_response_exponent: 1.0,
             rolling_resistance_force_newtons: 32.0,
-            handbrake_lateral_multiplier: 0.42,
-            handbrake_longitudinal_multiplier: 0.20,
+            auxiliary_brake_lateral_multiplier: 0.42,
+            auxiliary_brake_longitudinal_multiplier: 0.20,
             low_speed_lateral_multiplier: 1.35,
             nominal_load_newtons: 3_500.0,
             load_sensitivity: 0.45,
@@ -305,8 +397,6 @@ pub struct StabilityConfig {
     pub yaw_stability_torque_nm_per_radps: f32,
     pub yaw_stability_speed_threshold_mps: f32,
     pub airborne_upright_torque_nm_per_rad: f32,
-    pub drift_entry_ratio: f32,
-    pub drift_exit_ratio: f32,
 }
 
 impl Default for StabilityConfig {
@@ -320,8 +410,6 @@ impl Default for StabilityConfig {
             yaw_stability_torque_nm_per_radps: 2_000.0,
             yaw_stability_speed_threshold_mps: 6.0,
             airborne_upright_torque_nm_per_rad: 1_200.0,
-            drift_entry_ratio: 0.34,
-            drift_exit_ratio: 0.24,
         }
     }
 }

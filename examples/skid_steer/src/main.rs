@@ -1,17 +1,18 @@
 //! Skid-steer ground vehicle example — tracked/skid-steer vehicle with 3 axles.
 //!
-//! Demonstrates `SteeringMode::SkidSteer`, spool differential, and independent
+//! Demonstrates `DriveModel::Track`, a spool differential, and independent
 //! track control.  All wheels are driven; steering works by varying left/right
-//! track speeds.  WASD to steer/throttle, Space to brake, Shift for handbrake,
+//! track speeds.  WASD to steer/throttle, Space to brake, Shift for auxiliary brake,
 //! R to reset.
 
 use bevy::prelude::*;
 use ground_vehicle_example_support as support;
 use ground_vehicle::{
-    AerodynamicsConfig, DifferentialConfig, DifferentialMode, DrivetrainConfig, EngineConfig,
-    GroundVehicle, GroundVehicleControl, GroundVehicleSurface, GroundVehicleWheel,
-    GroundVehicleWheelVisual, ReversePolicy, StabilityConfig, SteeringConfig, SteeringMode,
-    SuspensionConfig, TireGripConfig, TransmissionConfig, WheelSide,
+    AerodynamicsConfig, DifferentialConfig, DifferentialMode, DirectionChangeConfig,
+    DirectionChangePolicy, DriveModel, EngineConfig, GearModel, GroundVehicle,
+    GroundVehicleSurface, GroundVehicleWheel, GroundVehicleWheelVisual, PowertrainConfig,
+    StabilityConfig, SteeringConfig, SteeringMode, SuspensionConfig, TireGripConfig,
+    TrackDriveConfig, VehicleIntent, WheelSide,
 };
 use support::{
     ExampleDriver, ResetPose, ScriptedControlOverride, driver_actions, spawn_overlay,
@@ -54,14 +55,13 @@ fn setup(
         angular_inertia_kgm2: Vec3::new(1_800.0, 2_600.0, 3_300.0),
         center_of_mass_offset: Vec3::new(0.0, -0.45, 0.0),
         steering: SteeringConfig {
-            mode: SteeringMode::SkidSteer,                       // <-- key difference
-            skid_steer_turn_scale: 0.92,
+            mode: SteeringMode::Disabled,                        // no wheel-angle steering
             max_angle_rad: 0.0,                                  // no wheel angle for skid steer
             ackermann_ratio: 0.0,
             minimum_speed_factor: 1.0,
             ..default()
         },
-        drivetrain: DrivetrainConfig {
+        powertrain: PowertrainConfig {
             engine: EngineConfig {
                 peak_torque_nm: 720.0,
                 peak_torque_rpm: 2_200.0,
@@ -71,22 +71,26 @@ fn setup(
                 engine_brake_torque_nm: 180.0,
                 ..default()
             },
-            transmission: TransmissionConfig {
-                automatic: false,                                // single fixed gear
-                forward_gears: [5.30, 3.10, 1.85, 1.20, 1.0, 1.0],
-                forward_gear_count: 1,
-                final_drive_ratio: 5.40,
-                reverse_ratio: 5.10,
-                clutch_coupling_speed_mps: 1.5,
+            gear_model: GearModel::Fixed(ground_vehicle::FixedGearConfig {
+                forward_ratio: 5.30 * 5.40,
+                reverse_ratio: 5.10 * 5.40,
+                coupling_speed_mps: 1.5,
+                direction_change: DirectionChangeConfig {
+                    policy: DirectionChangePolicy::Immediate,
+                    ..default()
+                },
                 ..default()
-            },
-            differential: DifferentialConfig {
-                mode: DifferentialMode::Spool,                   // locked for skid steer
+            }),
+            drive_model: DriveModel::Track(TrackDriveConfig {
+                differential: DifferentialConfig {
+                    mode: DifferentialMode::Spool,               // locked for skid steer
+                    ..default()
+                },
+                turn_split: 0.92,
                 ..default()
-            },
+            }),
             brake_force_newtons: 15_000.0,
-            handbrake_force_newtons: 6_000.0,
-            reverse_policy: ReversePolicy::Immediate,            // instant reverse for maneuvering
+            auxiliary_brake_force_newtons: 6_000.0,
             ..default()
         },
         stability: StabilityConfig {
@@ -112,7 +116,7 @@ fn setup(
             Name::new("Skid Vehicle"),
             ExampleDriver,
             vehicle,
-            GroundVehicleControl::default(),
+            VehicleIntent::default(),
             ScriptedControlOverride::default(),
             avian3d::prelude::Mass(vehicle.mass_kg),
             avian3d::prelude::AngularInertia::new(vehicle.angular_inertia_kgm2),
@@ -214,7 +218,7 @@ fn setup(
                     steer_factor: 0.0,                           // no wheel angle
                     drive_factor: 1.0,                           // all driven
                     brake_factor: 1.0,
-                    handbrake_factor: 0.6,
+                    auxiliary_brake_factor: 0.6,
                     suspension,
                     tire,
                 },

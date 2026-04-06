@@ -9,11 +9,14 @@ use bevy_enhanced_input::prelude::{
     InputAction, Press as InputPress, Start, actions, bindings,
 };
 use ground_vehicle::{
-    AerodynamicsConfig, DifferentialConfig, DifferentialMode, DrivetrainConfig, EngineConfig,
-    GroundVehicle, GroundVehicleControl, GroundVehicleDebugDraw, GroundVehiclePlugin,
+    AerodynamicsConfig, AutomaticGearboxConfig, AxleDriveConfig, DifferentialConfig,
+    DifferentialMode, DirectionChangeConfig, DirectionChangePolicy, DriveModel, EngineConfig,
+    FixedGearConfig, GearModel, GroundVehicle, GroundVehicleDebugDraw, GroundVehicleDriftConfig,
+    GroundVehicleDriftPlugin, GroundVehicleDriftTelemetry, GroundVehiclePlugin,
     GroundVehicleSurface, GroundVehicleSystems, GroundVehicleTelemetry, GroundVehicleWheel,
-    GroundVehicleWheelVisual, MagicFormulaConfig, ReversePolicy, StabilityConfig, SteeringConfig,
-    SteeringMode, SuspensionConfig, TireGripConfig, TireModel, TransmissionConfig, WheelSide,
+    GroundVehicleWheelVisual, MagicFormulaConfig, PowertrainConfig, StabilityConfig,
+    SteeringConfig, SteeringMode, SuspensionConfig, TireGripConfig, TireModel,
+    TrackDriveConfig, VehicleIntent, WheelSide,
 };
 use saddle_pane::prelude::*;
 
@@ -99,7 +102,7 @@ pub struct ExampleTitle(pub &'static str);
 pub struct ExampleDriver;
 
 #[derive(Component, Debug, Clone, Copy, Default)]
-pub struct ScriptedControlOverride(pub Option<GroundVehicleControl>);
+pub struct ScriptedControlOverride(pub Option<VehicleIntent>);
 
 #[derive(Component)]
 pub struct FollowCamera {
@@ -169,7 +172,7 @@ impl WheelSpec {
             steer_factor: self.steer_factor,
             drive_factor: self.drive_factor,
             brake_factor: self.brake_factor,
-            handbrake_factor: self.handbrake_factor,
+            auxiliary_brake_factor: self.handbrake_factor,
             suspension: self.suspension,
             tire: self.tire,
         }
@@ -188,6 +191,7 @@ pub fn configure_example_app(app: &mut App, title: &'static str, debug_draw: boo
         }),
         PhysicsPlugins::default(),
         GroundVehiclePlugin::default(),
+        GroundVehicleDriftPlugin::default(),
         pane_plugins(),
     ))
     .insert_resource(Time::<Fixed>::from_hz(60.0))
@@ -223,6 +227,10 @@ pub fn configure_example_app(app: &mut App, title: &'static str, debug_draw: boo
         .add_observer(clear_handbrake_on_cancel)
         .add_observer(clear_handbrake_on_complete)
         .add_observer(reset_vehicle)
+        .add_systems(
+            PostStartup,
+            attach_default_drift_helpers,
+        )
         .add_systems(
             FixedUpdate,
             apply_scripted_control_overrides
@@ -323,7 +331,7 @@ pub fn spawn_overlay(commands: &mut Commands, title: &'static str) {
         Name::new("Overlay"),
         OverlayText,
         Text::new(format!(
-            "{title}\n\nControls:\n  W/S  Throttle / Reverse\n  A/D  Steer\n  Space  Brake\n  Shift  Handbrake\n  R  Reset vehicle\n"
+            "{title}\n\nControls:\n  W/S  Drive / Reverse\n  A/D  Turn\n  Space  Brake\n  Shift  Auxiliary brake\n  R  Reset vehicle\n"
         )),
         Node {
             position_type: PositionType::Absolute,
@@ -418,7 +426,7 @@ pub fn spawn_compact_car_demo(
             max_angle_rad: 29.0_f32.to_radians(),
             ..default()
         },
-        drivetrain: DrivetrainConfig {
+        powertrain: PowertrainConfig {
             engine: EngineConfig {
                 peak_torque_nm: 380.0,
                 peak_torque_rpm: 4_200.0,
@@ -426,7 +434,7 @@ pub fn spawn_compact_car_demo(
                 engine_brake_torque_nm: 90.0,
                 ..default()
             },
-            transmission: TransmissionConfig {
+            gear_model: GearModel::Automatic(AutomaticGearboxConfig {
                 final_drive_ratio: 3.70,
                 forward_gears: [3.60, 2.19, 1.46, 1.09, 0.87, 0.72],
                 forward_gear_count: 5,
@@ -434,12 +442,15 @@ pub fn spawn_compact_car_demo(
                 shift_up_rpm: 5_800.0,
                 shift_down_rpm: 2_500.0,
                 ..default()
-            },
-            brake_force_newtons: 15_000.0,
-            differential: DifferentialConfig {
-                mode: DifferentialMode::Open,
+            }),
+            drive_model: DriveModel::Axle(AxleDriveConfig {
+                differential: DifferentialConfig {
+                    mode: DifferentialMode::Open,
+                    ..default()
+                },
                 ..default()
-            },
+            }),
+            brake_force_newtons: 15_000.0,
             ..default()
         },
         ..default()
@@ -475,7 +486,7 @@ pub fn spawn_drift_coupe_demo(
             steer_rate_rad_per_sec: 3.8,
             ..default()
         },
-        drivetrain: DrivetrainConfig {
+        powertrain: PowertrainConfig {
             engine: EngineConfig {
                 peak_torque_nm: 410.0,
                 peak_torque_rpm: 4_800.0,
@@ -485,7 +496,7 @@ pub fn spawn_drift_coupe_demo(
                 engine_brake_torque_nm: 95.0,
                 ..default()
             },
-            transmission: TransmissionConfig {
+            gear_model: GearModel::Automatic(AutomaticGearboxConfig {
                 final_drive_ratio: 4.10,
                 forward_gears: [3.12, 2.10, 1.55, 1.22, 1.00, 0.82],
                 forward_gear_count: 5,
@@ -493,23 +504,24 @@ pub fn spawn_drift_coupe_demo(
                 shift_up_rpm: 6_300.0,
                 shift_down_rpm: 3_600.0,
                 ..default()
-            },
-            handbrake_force_newtons: 11_200.0,
-            differential: DifferentialConfig {
-                mode: DifferentialMode::Spool,
+            }),
+            drive_model: DriveModel::Axle(AxleDriveConfig {
+                differential: DifferentialConfig {
+                    mode: DifferentialMode::Spool,
+                    ..default()
+                },
                 ..default()
-            },
+            }),
+            auxiliary_brake_force_newtons: 11_200.0,
             ..default()
         },
         stability: StabilityConfig {
             yaw_stability_torque_nm_per_radps: 700.0,
-            drift_entry_ratio: 0.22,
-            drift_exit_ratio: 0.16,
             ..default()
         },
         ..default()
     };
-    spawn_vehicle(
+    let entity = spawn_vehicle(
         commands,
         meshes,
         materials,
@@ -521,7 +533,13 @@ pub fn spawn_drift_coupe_demo(
         Color::srgb(0.10, 0.41, 0.83),
         Color::srgb(0.08, 0.08, 0.09),
         pilot_controlled,
-    )
+    );
+    commands.entity(entity).insert(GroundVehicleDriftConfig {
+        entry_ratio: 0.22,
+        exit_ratio: 0.16,
+        ..default()
+    });
+    entity
 }
 
 pub fn spawn_cargo_truck_demo(
@@ -626,7 +644,7 @@ fn spawn_vehicle(
         Name::new(name.to_string()),
         ExampleDriver,
         vehicle,
-        GroundVehicleControl::default(),
+        VehicleIntent::default(),
         ScriptedControlOverride::default(),
         Mass(vehicle.mass_kg),
         AngularInertia::new(vehicle.angular_inertia_kgm2),
@@ -822,8 +840,8 @@ fn drift_coupe_wheels() -> Vec<WheelSpec> {
             wheel.tire.lateral_grip = 0.82;
             wheel.tire.longitudinal_grip = 1.18;
             wheel.tire.low_speed_slip_reference_mps = 1.8;
-            wheel.tire.handbrake_lateral_multiplier = 0.24;
-            wheel.tire.handbrake_longitudinal_multiplier = 0.12;
+            wheel.tire.auxiliary_brake_lateral_multiplier = 0.24;
+            wheel.tire.auxiliary_brake_longitudinal_multiplier = 0.12;
             wheel.tire.magic_formula = MagicFormulaConfig {
                 longitudinal_peak_slip_ratio: 0.16,
                 lateral_peak_slip_angle_rad: 13.0_f32.to_radians(),
@@ -847,7 +865,7 @@ fn cargo_truck_vehicle() -> GroundVehicle {
             speed_reduction_end_mps: 24.0,
             ..default()
         },
-        drivetrain: DrivetrainConfig {
+        powertrain: PowertrainConfig {
             engine: EngineConfig {
                 peak_torque_nm: 1_060.0,
                 peak_torque_rpm: 1_900.0,
@@ -857,23 +875,29 @@ fn cargo_truck_vehicle() -> GroundVehicle {
                 engine_brake_torque_nm: 280.0,
                 ..default()
             },
-            transmission: TransmissionConfig {
+            gear_model: GearModel::Automatic(AutomaticGearboxConfig {
                 final_drive_ratio: 4.85,
                 forward_gears: [6.40, 3.55, 2.35, 1.58, 1.22, 0.92],
                 forward_gear_count: 6,
                 reverse_ratio: 6.10,
                 shift_up_rpm: 2_950.0,
                 shift_down_rpm: 1_450.0,
-                clutch_coupling_speed_mps: 2.4,
+                coupling_speed_mps: 2.4,
+                direction_change: DirectionChangeConfig {
+                    policy: DirectionChangePolicy::StopThenChange,
+                    ..default()
+                },
                 ..default()
-            },
-            differential: DifferentialConfig {
-                mode: DifferentialMode::LimitedSlip,
-                limited_slip_load_bias: 0.68,
-            },
+            }),
+            drive_model: DriveModel::Axle(AxleDriveConfig {
+                differential: DifferentialConfig {
+                    mode: DifferentialMode::LimitedSlip,
+                    limited_slip_load_bias: 0.68,
+                },
+                ..default()
+            }),
             brake_force_newtons: 24_000.0,
-            handbrake_force_newtons: 16_000.0,
-            reverse_policy: ReversePolicy::StopThenReverse,
+            auxiliary_brake_force_newtons: 16_000.0,
             ..default()
         },
         stability: StabilityConfig {
@@ -1026,14 +1050,13 @@ fn skid_vehicle() -> GroundVehicle {
         angular_inertia_kgm2: Vec3::new(1_800.0, 2_600.0, 3_300.0),
         center_of_mass_offset: Vec3::new(0.0, -0.45, 0.0),
         steering: SteeringConfig {
-            mode: SteeringMode::SkidSteer,
-            skid_steer_turn_scale: 0.92,
+            mode: SteeringMode::Disabled,
             max_angle_rad: 0.0,
             ackermann_ratio: 0.0,
             minimum_speed_factor: 1.0,
             ..default()
         },
-        drivetrain: DrivetrainConfig {
+        powertrain: PowertrainConfig {
             engine: EngineConfig {
                 peak_torque_nm: 720.0,
                 peak_torque_rpm: 2_200.0,
@@ -1043,22 +1066,26 @@ fn skid_vehicle() -> GroundVehicle {
                 engine_brake_torque_nm: 180.0,
                 ..default()
             },
-            transmission: TransmissionConfig {
-                automatic: false,
-                forward_gears: [5.30, 3.10, 1.85, 1.20, 1.0, 1.0],
-                forward_gear_count: 1,
-                final_drive_ratio: 5.40,
-                reverse_ratio: 5.10,
-                clutch_coupling_speed_mps: 1.5,
+            gear_model: GearModel::Fixed(FixedGearConfig {
+                forward_ratio: 5.30 * 5.40,
+                reverse_ratio: 5.10 * 5.40,
+                coupling_speed_mps: 1.5,
+                direction_change: DirectionChangeConfig {
+                    policy: DirectionChangePolicy::Immediate,
+                    ..default()
+                },
                 ..default()
-            },
-            differential: DifferentialConfig {
-                mode: DifferentialMode::Spool,
+            }),
+            drive_model: DriveModel::Track(TrackDriveConfig {
+                differential: DifferentialConfig {
+                    mode: DifferentialMode::Spool,
+                    ..default()
+                },
+                turn_split: 0.92,
                 ..default()
-            },
+            }),
             brake_force_newtons: 15_000.0,
-            handbrake_force_newtons: 6_000.0,
-            reverse_policy: ReversePolicy::Immediate,
+            auxiliary_brake_force_newtons: 6_000.0,
             ..default()
         },
         stability: StabilityConfig {
@@ -1139,7 +1166,7 @@ fn rover_vehicle() -> GroundVehicle {
             minimum_speed_factor: 0.65,
             ..default()
         },
-        drivetrain: DrivetrainConfig {
+        powertrain: PowertrainConfig {
             engine: EngineConfig {
                 peak_torque_nm: 185.0,
                 peak_torque_rpm: 2_600.0,
@@ -1149,22 +1176,25 @@ fn rover_vehicle() -> GroundVehicle {
                 engine_brake_torque_nm: 65.0,
                 ..default()
             },
-            transmission: TransmissionConfig {
+            gear_model: GearModel::Automatic(AutomaticGearboxConfig {
                 final_drive_ratio: 6.10,
                 forward_gears: [3.85, 2.35, 1.55, 1.12, 0.92, 0.78],
                 forward_gear_count: 4,
                 reverse_ratio: 3.45,
                 shift_up_rpm: 4_050.0,
                 shift_down_rpm: 2_050.0,
-                clutch_coupling_speed_mps: 1.2,
+                coupling_speed_mps: 1.2,
                 ..default()
-            },
+            }),
+            drive_model: DriveModel::Axle(AxleDriveConfig {
+                differential: DifferentialConfig {
+                    mode: DifferentialMode::LimitedSlip,
+                    limited_slip_load_bias: 0.62,
+                },
+                ..default()
+            }),
             brake_force_newtons: 10_500.0,
-            handbrake_force_newtons: 8_500.0,
-            differential: DifferentialConfig {
-                mode: DifferentialMode::LimitedSlip,
-                limited_slip_load_bias: 0.62,
-            },
+            auxiliary_brake_force_newtons: 8_500.0,
             ..default()
         },
         stability: StabilityConfig {
@@ -1298,12 +1328,11 @@ fn sync_pane_to_runtime(
 
     vehicle.steering.max_angle_rad = pane.steer_lock_deg.to_radians();
     vehicle.steering.steer_rate_rad_per_sec = pane.steer_rate_rad_per_sec;
-    vehicle.drivetrain.engine.peak_torque_nm = pane.peak_torque_nm;
-    vehicle.drivetrain.transmission.shift_up_rpm = pane.shift_up_rpm.max(100.0);
-    vehicle.drivetrain.transmission.shift_down_rpm = pane
-        .shift_down_rpm
-        .min(pane.shift_up_rpm - 100.0)
-        .max(100.0);
+    vehicle.powertrain.engine.peak_torque_nm = pane.peak_torque_nm;
+    if let GearModel::Automatic(ref mut gearbox) = vehicle.powertrain.gear_model {
+        gearbox.shift_up_rpm = pane.shift_up_rpm.max(100.0);
+        gearbox.shift_down_rpm = pane.shift_down_rpm.min(pane.shift_up_rpm - 100.0).max(100.0);
+    }
 
     for mut wheel in &mut wheels {
         if wheel.chassis != active_entity {
@@ -1324,19 +1353,31 @@ fn sync_pane_to_runtime(
     }
 }
 
+fn attach_default_drift_helpers(
+    mut commands: Commands,
+    vehicles: Query<Entity, (With<GroundVehicle>, Without<GroundVehicleDriftConfig>)>,
+) {
+    for entity in &vehicles {
+        commands
+            .entity(entity)
+            .insert(GroundVehicleDriftConfig::default());
+    }
+}
+
 fn update_pane_stats(
     mut stats: ResMut<GroundVehicleExampleStats>,
     active_driver: Query<
         (
             &GroundVehicleTelemetry,
+            Option<&GroundVehicleDriftTelemetry>,
             Option<&ContextActivity<ExampleDriver>>,
         ),
         With<ExampleDriver>,
     >,
 ) {
-    let Some((telemetry, _)) = active_driver
+    let Some((telemetry, drift, _)) = active_driver
         .iter()
-        .find(|(_, activity)| activity.is_none_or(|activity| **activity))
+        .find(|(_, _, activity)| activity.is_none_or(|activity| **activity))
     else {
         return;
     };
@@ -1344,7 +1385,7 @@ fn update_pane_stats(
     stats.speed_mps = telemetry.speed_mps;
     stats.engine_rpm = telemetry.engine_rpm;
     stats.selected_gear = i32::from(telemetry.selected_gear);
-    stats.drift_ratio = telemetry.drift_ratio;
+    stats.drift_ratio = drift.map_or(0.0, |drift| drift.drift_ratio);
 }
 
 fn update_overlay(
@@ -1353,8 +1394,9 @@ fn update_overlay(
     active_driver: Query<
         (
             &Name,
-            &GroundVehicleControl,
+            &VehicleIntent,
             &GroundVehicleTelemetry,
+            Option<&GroundVehicleDriftTelemetry>,
             Option<&ContextActivity<ExampleDriver>>,
         ),
         With<ExampleDriver>,
@@ -1363,33 +1405,35 @@ fn update_overlay(
     let Ok(mut overlay) = overlay.single_mut() else {
         return;
     };
-    let Some((name, control, telemetry, _)) = active_driver
+    let Some((name, control, telemetry, drift, _)) = active_driver
         .iter()
-        .find(|(_, _, _, activity)| activity.is_none_or(|activity| **activity))
+        .find(|(_, _, _, _, activity)| activity.is_none_or(|activity| **activity))
     else {
         overlay.0 = format!("{}\nNo active driver", title.0);
         return;
     };
+    let drift_ratio = drift.map_or(0.0, |drift| drift.drift_ratio);
+    let drifting = drift.is_some_and(|drift| drift.drifting);
 
     overlay.0 = format!(
-        "{}\nActive vehicle: {}\nSpeed {:>6.1} m/s  Forward {:>6.1}  Lateral {:>5.1}\nGrounded wheels: {:>2}  Drift ratio {:>4.2}  Drifting {}\nSteer {:>4.2}  Throttle {:>4.2}  Brake {:>4.2}  Handbrake {:>4.2}\nControls: WASD steer/throttle, Space brake, Shift handbrake, R reset.",
+        "{}\nActive vehicle: {}\nSpeed {:>6.1} m/s  Forward {:>6.1}  Lateral {:>5.1}\nGrounded wheels: {:>2}  Drift ratio {:>4.2}  Drifting {}\nTurn {:>4.2}  Drive {:>4.2}  Brake {:>4.2}  Aux brake {:>4.2}\nControls: WASD drive/turn, Space brake, Shift auxiliary brake, R reset.",
         title.0,
         name.as_str(),
         telemetry.speed_mps,
         telemetry.forward_speed_mps,
         telemetry.lateral_speed_mps,
         telemetry.grounded_wheels,
-        telemetry.drift_ratio,
-        telemetry.drifting,
-        control.steering,
-        control.throttle,
+        drift_ratio,
+        drifting,
+        control.turn,
+        control.drive,
         control.brake,
-        control.handbrake,
+        control.auxiliary_brake,
     );
 }
 
 fn apply_scripted_control_overrides(
-    mut vehicles: Query<(&mut GroundVehicleControl, &ScriptedControlOverride)>,
+    mut vehicles: Query<(&mut VehicleIntent, &ScriptedControlOverride)>,
 ) {
     for (mut control, scripted_override) in &mut vehicles {
         if let Some(scripted) = scripted_override.0 {
@@ -1424,61 +1468,61 @@ fn follow_camera(
 
 fn apply_throttle(
     trigger: On<Fire<ThrottleAction>>,
-    mut controls: Query<&mut GroundVehicleControl, With<ExampleDriver>>,
+    mut controls: Query<&mut VehicleIntent, With<ExampleDriver>>,
 ) {
     if let Ok(mut control) = controls.get_mut(trigger.context) {
-        control.throttle = trigger.value;
+        control.drive = trigger.value;
     }
 }
 
 fn clear_throttle_on_cancel(
     trigger: On<InputCancel<ThrottleAction>>,
-    mut controls: Query<&mut GroundVehicleControl, With<ExampleDriver>>,
+    mut controls: Query<&mut VehicleIntent, With<ExampleDriver>>,
 ) {
     if let Ok(mut control) = controls.get_mut(trigger.context) {
-        control.throttle = 0.0;
+        control.drive = 0.0;
     }
 }
 
 fn clear_throttle_on_complete(
     trigger: On<Complete<ThrottleAction>>,
-    mut controls: Query<&mut GroundVehicleControl, With<ExampleDriver>>,
+    mut controls: Query<&mut VehicleIntent, With<ExampleDriver>>,
 ) {
     if let Ok(mut control) = controls.get_mut(trigger.context) {
-        control.throttle = 0.0;
+        control.drive = 0.0;
     }
 }
 
 fn apply_steering(
     trigger: On<Fire<SteeringAction>>,
-    mut controls: Query<&mut GroundVehicleControl, With<ExampleDriver>>,
+    mut controls: Query<&mut VehicleIntent, With<ExampleDriver>>,
 ) {
     if let Ok(mut control) = controls.get_mut(trigger.context) {
-        control.steering = trigger.value;
+        control.turn = trigger.value;
     }
 }
 
 fn clear_steering_on_cancel(
     trigger: On<InputCancel<SteeringAction>>,
-    mut controls: Query<&mut GroundVehicleControl, With<ExampleDriver>>,
+    mut controls: Query<&mut VehicleIntent, With<ExampleDriver>>,
 ) {
     if let Ok(mut control) = controls.get_mut(trigger.context) {
-        control.steering = 0.0;
+        control.turn = 0.0;
     }
 }
 
 fn clear_steering_on_complete(
     trigger: On<Complete<SteeringAction>>,
-    mut controls: Query<&mut GroundVehicleControl, With<ExampleDriver>>,
+    mut controls: Query<&mut VehicleIntent, With<ExampleDriver>>,
 ) {
     if let Ok(mut control) = controls.get_mut(trigger.context) {
-        control.steering = 0.0;
+        control.turn = 0.0;
     }
 }
 
 fn apply_brake(
     trigger: On<Fire<BrakeAction>>,
-    mut controls: Query<&mut GroundVehicleControl, With<ExampleDriver>>,
+    mut controls: Query<&mut VehicleIntent, With<ExampleDriver>>,
 ) {
     if let Ok(mut control) = controls.get_mut(trigger.context) {
         control.brake = f32::from(trigger.value);
@@ -1487,7 +1531,7 @@ fn apply_brake(
 
 fn clear_brake_on_cancel(
     trigger: On<InputCancel<BrakeAction>>,
-    mut controls: Query<&mut GroundVehicleControl, With<ExampleDriver>>,
+    mut controls: Query<&mut VehicleIntent, With<ExampleDriver>>,
 ) {
     if let Ok(mut control) = controls.get_mut(trigger.context) {
         control.brake = 0.0;
@@ -1496,7 +1540,7 @@ fn clear_brake_on_cancel(
 
 fn clear_brake_on_complete(
     trigger: On<Complete<BrakeAction>>,
-    mut controls: Query<&mut GroundVehicleControl, With<ExampleDriver>>,
+    mut controls: Query<&mut VehicleIntent, With<ExampleDriver>>,
 ) {
     if let Ok(mut control) = controls.get_mut(trigger.context) {
         control.brake = 0.0;
@@ -1505,28 +1549,28 @@ fn clear_brake_on_complete(
 
 fn apply_handbrake(
     trigger: On<Fire<HandbrakeAction>>,
-    mut controls: Query<&mut GroundVehicleControl, With<ExampleDriver>>,
+    mut controls: Query<&mut VehicleIntent, With<ExampleDriver>>,
 ) {
     if let Ok(mut control) = controls.get_mut(trigger.context) {
-        control.handbrake = f32::from(trigger.value);
+        control.auxiliary_brake = f32::from(trigger.value);
     }
 }
 
 fn clear_handbrake_on_cancel(
     trigger: On<InputCancel<HandbrakeAction>>,
-    mut controls: Query<&mut GroundVehicleControl, With<ExampleDriver>>,
+    mut controls: Query<&mut VehicleIntent, With<ExampleDriver>>,
 ) {
     if let Ok(mut control) = controls.get_mut(trigger.context) {
-        control.handbrake = 0.0;
+        control.auxiliary_brake = 0.0;
     }
 }
 
 fn clear_handbrake_on_complete(
     trigger: On<Complete<HandbrakeAction>>,
-    mut controls: Query<&mut GroundVehicleControl, With<ExampleDriver>>,
+    mut controls: Query<&mut VehicleIntent, With<ExampleDriver>>,
 ) {
     if let Ok(mut control) = controls.get_mut(trigger.context) {
-        control.handbrake = 0.0;
+        control.auxiliary_brake = 0.0;
     }
 }
 
@@ -1538,7 +1582,7 @@ fn reset_vehicle(
             &mut Transform,
             &mut LinearVelocity,
             &mut AngularVelocity,
-            &mut GroundVehicleControl,
+            &mut VehicleIntent,
             &mut ScriptedControlOverride,
         ),
         With<ExampleDriver>,
@@ -1558,6 +1602,6 @@ fn reset_vehicle(
     *transform = pose.transform;
     *linear_velocity = LinearVelocity(pose.linear_velocity);
     *angular_velocity = AngularVelocity(pose.angular_velocity);
-    *control = GroundVehicleControl::default();
+    *control = VehicleIntent::default();
     scripted_override.0 = None;
 }

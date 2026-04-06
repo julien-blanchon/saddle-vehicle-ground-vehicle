@@ -1,8 +1,7 @@
 use crate::{
-    DriftStateChanged, GroundVehicle, GroundVehicleInternal, GroundVehicleReset,
-    GroundVehicleResolvedControl, GroundVehicleTelemetry, GroundVehicleWheel,
-    GroundVehicleWheelInternal, GroundVehicleWheelState, VehicleBecameAirborne, VehicleLanded,
-    WheelGroundedChanged,
+    GroundVehicle, GroundVehicleInternal, GroundVehicleReset, GroundVehicleResolvedIntent,
+    GroundVehicleTelemetry, GroundVehicleWheel, GroundVehicleWheelInternal,
+    GroundVehicleWheelState, VehicleBecameAirborne, VehicleLanded, WheelGroundedChanged,
 };
 use avian3d::prelude::*;
 use bevy::prelude::*;
@@ -91,7 +90,7 @@ pub(crate) fn apply_stability_helpers(
         Entity,
         Forces,
         &GroundVehicle,
-        &GroundVehicleResolvedControl,
+        &GroundVehicleResolvedIntent,
         &Transform,
         &GroundVehicleInternal,
     )>,
@@ -180,13 +179,12 @@ pub(crate) fn update_vehicle_telemetry(
         Entity,
         &Transform,
         &LinearVelocity,
-        &GroundVehicle,
         &GroundVehicleInternal,
         &mut GroundVehicleTelemetry,
     )>,
     wheels: Query<(&GroundVehicleWheel, &GroundVehicleWheelState)>,
 ) {
-    for (entity, transform, linear_velocity, vehicle, internal, mut telemetry) in &mut chassis {
+    for (entity, transform, linear_velocity, internal, mut telemetry) in &mut chassis {
         let speed_mps = linear_velocity.0.length();
         let forward_speed_mps = linear_velocity.0.dot(*transform.forward());
         let lateral_speed_mps = linear_velocity.0.dot(*transform.right());
@@ -194,8 +192,6 @@ pub(crate) fn update_vehicle_telemetry(
 
         let mut steer_sum = 0.0;
         let mut steer_count = 0_u32;
-        let mut drift_sum = 0.0;
-        let mut drift_count = 0_u32;
 
         for (wheel, state) in &wheels {
             if wheel.chassis != entity {
@@ -203,29 +199,7 @@ pub(crate) fn update_vehicle_telemetry(
             }
             steer_sum += state.steer_angle_rad.abs();
             steer_count += 1;
-
-            if wheel.drive_factor > 0.0
-                || wheel.handbrake_factor > 0.0
-                || matches!(wheel.side, crate::WheelSide::Left | crate::WheelSide::Right)
-            {
-                drift_sum += (state.lateral_speed_mps.abs()
-                    / (state.longitudinal_speed_mps.abs() + 2.0))
-                    .clamp(0.0, 3.0);
-                drift_count += 1;
-            }
         }
-
-        let drift_ratio = if drift_count > 0 {
-            drift_sum / drift_count as f32
-        } else {
-            0.0
-        };
-        let drift_threshold = if internal.was_drifting {
-            vehicle.stability.drift_exit_ratio
-        } else {
-            vehicle.stability.drift_entry_ratio
-        };
-        let drifting = !airborne && forward_speed_mps.abs() > 5.0 && drift_ratio >= drift_threshold;
         let average_ground_normal = if internal.grounded_wheels > 0 {
             (internal.average_ground_normal_sum / f32::from(internal.grounded_wheels))
                 .normalize_or_zero()
@@ -243,8 +217,6 @@ pub(crate) fn update_vehicle_telemetry(
         } else {
             0.0
         };
-        telemetry.drift_ratio = drift_ratio;
-        telemetry.drifting = drifting;
         telemetry.average_ground_normal = average_ground_normal;
         telemetry.engine_rpm = internal.engine_rpm;
         telemetry.selected_gear = internal.selected_gear;
@@ -286,10 +258,8 @@ pub(crate) fn emit_vehicle_state_messages(
     )>,
     airborne_writer: Option<MessageWriter<VehicleBecameAirborne>>,
     landed_writer: Option<MessageWriter<VehicleLanded>>,
-    drift_writer: Option<MessageWriter<DriftStateChanged>>,
 ) {
-    let (Some(mut airborne_writer), Some(mut landed_writer), Some(mut drift_writer)) =
-        (airborne_writer, landed_writer, drift_writer)
+    let (Some(mut airborne_writer), Some(mut landed_writer)) = (airborne_writer, landed_writer)
     else {
         return;
     };
@@ -304,15 +274,7 @@ pub(crate) fn emit_vehicle_state_messages(
                 grounded_wheels: telemetry.grounded_wheels,
             });
         }
-        if telemetry.drifting != internal.was_drifting {
-            drift_writer.write(DriftStateChanged {
-                chassis: entity,
-                drifting: telemetry.drifting,
-                drift_ratio: telemetry.drift_ratio,
-            });
-        }
 
         internal.was_airborne = telemetry.airborne;
-        internal.was_drifting = telemetry.drifting;
     }
 }

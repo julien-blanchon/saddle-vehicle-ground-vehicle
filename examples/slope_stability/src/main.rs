@@ -2,16 +2,16 @@
 //!
 //! Demonstrates suspension articulation, per-wheel grip/load tuning, limited-slip
 //! differential, and stability parameters for a vehicle designed to handle steep
-//! grades and off-camber terrain.  WASD to steer/throttle, Space to brake,
-//! Shift for handbrake, R to reset.
+//! grades and off-camber terrain. WASD to steer/throttle, Space to brake,
+//! Shift for auxiliary brake, R to reset.
 
 use bevy::prelude::*;
 use ground_vehicle_example_support as support;
 use ground_vehicle::{
-    AerodynamicsConfig, DifferentialConfig, DifferentialMode, DrivetrainConfig, EngineConfig,
-    GroundVehicle, GroundVehicleControl, GroundVehicleWheel, GroundVehicleWheelVisual,
-    StabilityConfig, SteeringConfig, SuspensionConfig, TireGripConfig, TransmissionConfig,
-    WheelSide,
+    AerodynamicsConfig, AutomaticGearboxConfig, AxleDriveConfig, DifferentialConfig,
+    DifferentialMode, DriveModel, EngineConfig, GearModel, GroundVehicle, GroundVehicleWheel,
+    GroundVehicleWheelVisual, PowertrainConfig, StabilityConfig, SteeringConfig,
+    SuspensionConfig, TireGripConfig, VehicleIntent, WheelSide,
 };
 use support::{
     ExampleDriver, ResetPose, ScriptedControlOverride, driver_actions, spawn_overlay, spawn_ramp,
@@ -71,7 +71,7 @@ fn setup(
             minimum_speed_factor: 0.65,
             ..default()
         },
-        drivetrain: DrivetrainConfig {
+        powertrain: PowertrainConfig {
             engine: EngineConfig {
                 peak_torque_nm: 185.0,
                 peak_torque_rpm: 2_600.0,
@@ -81,22 +81,25 @@ fn setup(
                 engine_brake_torque_nm: 65.0,
                 ..default()
             },
-            transmission: TransmissionConfig {
+            gear_model: GearModel::Automatic(AutomaticGearboxConfig {
                 final_drive_ratio: 6.10,                         // low gearing for torque
                 forward_gears: [3.85, 2.35, 1.55, 1.12, 0.92, 0.78],
                 forward_gear_count: 4,
                 reverse_ratio: 3.45,
                 shift_up_rpm: 4_050.0,
                 shift_down_rpm: 2_050.0,
-                clutch_coupling_speed_mps: 1.2,
+                coupling_speed_mps: 1.2,
                 ..default()
-            },
+            }),
+            drive_model: DriveModel::Axle(AxleDriveConfig {
+                differential: DifferentialConfig {
+                    mode: DifferentialMode::LimitedSlip,             // LSD for traction on slopes
+                    limited_slip_load_bias: 0.62,
+                },
+                ..default()
+            }),
             brake_force_newtons: 10_500.0,
-            handbrake_force_newtons: 8_500.0,
-            differential: DifferentialConfig {
-                mode: DifferentialMode::LimitedSlip,             // LSD for traction on slopes
-                limited_slip_load_bias: 0.62,
-            },
+            auxiliary_brake_force_newtons: 8_500.0,
             ..default()
         },
         stability: StabilityConfig {
@@ -128,7 +131,7 @@ fn setup(
             Name::new("Slope Rover"),
             ExampleDriver,
             vehicle,
-            GroundVehicleControl::default(),
+            VehicleIntent::default(),
             ScriptedControlOverride::default(),
             avian3d::prelude::Mass(vehicle.mass_kg),
             avian3d::prelude::AngularInertia::new(vehicle.angular_inertia_kgm2),
@@ -239,7 +242,7 @@ fn setup(
                 steer_factor: steer,
                 drive_factor: drive,
                 brake_factor: brake,
-                handbrake_factor: handbrake,
+                auxiliary_brake_factor: handbrake,
                 suspension,
                 tire,
             },

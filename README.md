@@ -1,8 +1,8 @@
 # Saddle Vehicle Ground Vehicle
 
-Reusable ground-vehicle controller for Bevy with Avian3D-backed suspension sampling, steering, drivetrain, tire grip, stability helpers, telemetry, wheel-visual sync, and crate-local lab verification.
+Reusable ground-vehicle controller for Bevy with Avian3D-backed suspension sampling, wheel steering, configurable powertrain strategies, tire grip, stability helpers, wheel-visual sync, and crate-local verification examples.
 
-The crate is intended for game-ready cars, trucks, utility vehicles, and skid-steer or tracked-style rigs. It does not try to be a motorsport simulator and it does not own camera, UI, mission, or damage systems.
+The crate is designed as a toolkit for cars, trucks, utility vehicles, and track-style rigs. It owns chassis and wheel force generation, but it does not own cameras, HUD, damage, missions, or game-specific vehicle genres.
 
 ## Quick Start
 
@@ -16,7 +16,8 @@ saddle-vehicle-ground-vehicle = { git = "https://github.com/julien-blanchon/sadd
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use saddle_vehicle_ground_vehicle::{
-    GroundVehicle, GroundVehiclePlugin, GroundVehicleWheel, GroundVehicleWheelVisual, WheelSide,
+    GroundVehicle, GroundVehiclePlugin, GroundVehicleWheel, GroundVehicleWheelVisual,
+    VehicleIntent, WheelSide,
 };
 
 #[derive(States, Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -49,6 +50,7 @@ fn setup(
         .spawn((
             Name::new("Demo Chassis"),
             vehicle,
+            VehicleIntent::default(),
             Collider::cuboid(1.8, 0.7, 4.2),
             Transform::from_xyz(0.0, 1.1, 0.0),
         ))
@@ -99,29 +101,69 @@ For examples and crate-local labs, `GroundVehiclePlugin::default()` is the alway
 | Type | Purpose |
 | --- | --- |
 | `GroundVehiclePlugin` | Registers the runtime with injectable activate, deactivate, and update schedules |
-| `GroundVehicleSystems` | Public ordering hooks: `InputAdaptation`, `Suspension`, `Steering`, `Drivetrain`, `Grip`, `Stability`, `Telemetry`, `VisualSync` |
-| `GroundVehicle` | Chassis-level authored config: mass, inertia, steering, drivetrain, stability, aero |
-| `GroundVehicleControl` | Input-agnostic driver intent: throttle, brake, steering, handbrake |
+| `GroundVehicleSystems` | Public ordering hooks: `InputAdaptation`, `Suspension`, `Steering`, `Powertrain`, `Grip`, `Stability`, `Telemetry`, `VisualSync` |
+| `GroundVehicle` | Chassis-level authored config: mass, inertia, steering, powertrain, stability, aero |
+| `VehicleIntent` | Generic driver or AI intent: signed drive, signed turn, brake, and auxiliary brake |
 | `GroundVehicleWheel` | Wheel authoring data: location, axle, drive/steer/brake role, suspension, tire |
 | `GroundVehicleWheelVisual` | Binding from wheel runtime state to a visible mesh entity |
 | `GroundVehicleWheelState` | Per-wheel runtime contact, load, slip, force, steer, and spin state |
-| `GroundVehicleTelemetry` | Chassis-level runtime speed, drift, grounded-wheel, normal, engine RPM, and selected-gear aggregation |
+| `GroundVehicleTelemetry` | Chassis-level runtime speed, grounded-wheel, normal, engine RPM, and selected-gear aggregation |
 | `GroundVehicleSurface` | Optional surface multipliers for grip, rolling drag, and braking |
 | `GroundVehicleReset` | Marker component: insert to teleport the vehicle and zero its velocities and wheel state |
 | `GroundVehicleDebugDraw` | Runtime gizmo toggles for suspension, contact, force, and slip vectors |
-| `SteeringConfig`, `DrivetrainConfig`, `EngineConfig`, `TransmissionConfig`, `DifferentialConfig`, `SuspensionConfig`, `TireGripConfig`, `MagicFormulaConfig`, `StabilityConfig`, `AerodynamicsConfig` | Tunable sub-configs used by authored chassis and wheel data |
-| `WheelGroundedChanged`, `VehicleBecameAirborne`, `VehicleLanded`, `DriftStateChanged` | Optional cross-crate messages for gameplay reactions, UI, VFX, or tuning tools |
+| `SteeringConfig`, `PowertrainConfig`, `EngineConfig`, `DriveModel`, `GearModel`, `AutomaticGearboxConfig`, `FixedGearConfig`, `DifferentialConfig`, `SuspensionConfig`, `TireGripConfig`, `MagicFormulaConfig`, `StabilityConfig`, `AerodynamicsConfig` | Tunable sub-configs used by authored chassis and wheel data |
+| `GroundVehicleDriftPlugin`, `GroundVehicleDriftConfig`, `GroundVehicleDriftTelemetry`, `DriftStateChanged` | Optional drift helper layer for slip-based drift telemetry and drift state messages |
+| `WheelGroundedChanged`, `VehicleBecameAirborne`, `VehicleLanded` | Core messages for gameplay reactions, UI, VFX, or tuning tools |
 
 The crate intentionally does not expose internal solver scratch state, axle accumulators, or force-request bookkeeping.
+
+## Powertrain Model
+
+`PowertrainConfig` separates the power source from the delivery strategy:
+
+- `engine`: torque curve and engine-braking behavior
+- `drive_model`: how torque is distributed, currently `DriveModel::Axle` or `DriveModel::Track`
+- `gear_model`: how ratio selection works, currently `GearModel::Automatic` or `GearModel::Fixed`
+- `brake_force_newtons` / `auxiliary_brake_force_newtons`: explicit brake budgets
+
+This keeps the input surface generic while letting road vehicles, multi-axle trucks, and track-drive rigs share the same chassis and tire systems.
+
+## Optional Drift Helper
+
+Drift telemetry is not part of the core runtime anymore.
+
+Add the optional helper when a game or example actually wants drift state:
+
+```rust,no_run
+use saddle_vehicle_ground_vehicle::{
+    GroundVehicleDriftConfig, GroundVehicleDriftPlugin, GroundVehiclePlugin,
+};
+
+App::new()
+    .add_plugins((
+        GroundVehiclePlugin::default(),
+        GroundVehicleDriftPlugin::default(),
+    ))
+    .add_systems(Startup, |mut commands: Commands| {
+        commands.spawn((
+            Name::new("Drift-Capable Vehicle"),
+            GroundVehicle::default(),
+            VehicleIntent::default(),
+            GroundVehicleDriftConfig::default(),
+        ));
+    });
+```
+
+Attach `GroundVehicleDriftConfig` to the same entity as `GroundVehicle`. The drift helper then writes `GroundVehicleDriftTelemetry` and emits `DriftStateChanged` when the drift state toggles.
 
 ## Supported Vehicle Styles
 
 - Four-wheel road vehicles with Ackermann steering
-- Rear-biased drift cars through handbrake shaping plus linear or Magic Formula tire response
+- Rear-biased drift cars through auxiliary-brake shaping plus linear or Magic Formula tire response
 - Long-travel off-road and utility vehicles
 - Multi-axle cargo trucks
-- Left/right skid-steer or tracked-style vehicles with differential turning
-- Automatic gearbox setups with authored torque curves, shift points, and final-drive ratios
+- Left/right track-drive or skid-steer style vehicles through `DriveModel::Track`
+- Single-speed or automatic geared powertrains
 
 ## What The Crate Does Not Do
 
@@ -130,10 +172,13 @@ The crate intentionally does not expose internal solver scratch state, axle accu
 - Full tread simulation for tracks
 - Camera rigs, HUD, replay, or networking
 - Damage, deformation, or mission-specific gameplay rules
+- Genre presets in the core API
+
+The old arcade/sim/off-road presets were intentionally removed from the core crate. Example-specific presets now live in `examples/support` where they do not constrain the reusable public API.
 
 ## Examples
 
-All example apps include live `saddle-pane` tuning so steering, drivetrain, grip, debug draw, and chase-camera settings can be adjusted at runtime.
+All example apps include live `saddle-pane` tuning and on-screen controls. The example support crate also adds the optional drift helper so drift telemetry is available in the demos and lab.
 
 | Example | Purpose | Run |
 | --- | --- | --- |
@@ -141,12 +186,12 @@ All example apps include live `saddle-pane` tuning so steering, drivetrain, grip
 | `multi_axle` | Six-wheel truck across bumps and uneven support | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_multi_axle` |
 | `drift_tuning` | Rear-biased drift coupe using the Magic Formula tire path for controllable breakaway | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_drift_tuning` |
 | `driving_demo` | Checkpoint-based canyon driving demo with a scripted tiltrotor escort from `saddle-vehicle-flight` | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_driving_demo` |
-| `skid_steer` | Left/right drive-group steering for tank-like or tracked-style control | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_skid_steer` |
+| `skid_steer` | Left/right track-drive steering for tank-like or tracked-style control | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_skid_steer` |
 | `slope_stability` | Hill hold, anti-roll, and low-speed traction on ramps and off-camber surfaces | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_slope_stability` |
 
 ## Crate-Local Lab
 
-The richer standalone verification app lives under `shared/vehicle/ground_vehicle/examples/lab`:
+The richer standalone verification app lives under `examples/lab`:
 
 ```bash
 cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab
@@ -166,14 +211,12 @@ cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e
 
 ## BRP
 
-Useful BRP commands against the lab:
-
-`ground_vehicle_lab` uses BRP port `15712` by default to avoid collisions with other local Bevy apps. Override with `GROUND_VEHICLE_LAB_BRP_PORT` if your environment needs a different port.
+`ground_vehicle_lab` uses BRP port `15712` by default to avoid collisions with other local Bevy apps. Override with `GROUND_VEHICLE_LAB_BRP_PORT` if needed.
 
 ```bash
 BRP_PORT=15712 uv run --active --project .codex/skills/bevy-brp/script brp app launch ground_vehicle_lab
-BRP_PORT=15712 uv run --active --project .codex/skills/bevy-brp/script brp world query bevy_ecs::name::Name
 BRP_PORT=15712 uv run --active --project .codex/skills/bevy-brp/script brp world query ground_vehicle::components::GroundVehicleTelemetry
+BRP_PORT=15712 uv run --active --project .codex/skills/bevy-brp/script brp world query ground_vehicle::drift::GroundVehicleDriftTelemetry
 BRP_PORT=15712 uv run --active --project .codex/skills/bevy-brp/script brp world query ground_vehicle::components::GroundVehicleWheelState
 BRP_PORT=15712 uv run --active --project .codex/skills/bevy-brp/script brp extras screenshot /tmp/ground_vehicle_lab.png
 BRP_PORT=15712 uv run --active --project .codex/skills/bevy-brp/script brp extras shutdown

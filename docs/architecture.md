@@ -9,7 +9,8 @@ Public authored/runtime surface:
 1. `components.rs`
 2. `config.rs`
 3. `messages.rs`
-4. `lib.rs`
+4. `drift.rs`
+5. `lib.rs`
 
 Internal simulation modules:
 
@@ -21,7 +22,7 @@ Internal simulation modules:
 6. `visuals.rs`
 7. `debug.rs`
 
-The crate owns vehicle behavior logic. Avian3D provides rigid bodies, spatial queries, mass properties, and force application, but not the vehicle model itself.
+Avian3D provides rigid bodies, spatial queries, mass properties, and force application. The crate owns the vehicle model itself.
 
 ## Entity Model
 
@@ -30,12 +31,12 @@ The crate owns vehicle behavior logic. Avian3D provides rigid bodies, spatial qu
 The chassis is the rigid-body root:
 
 - `GroundVehicle`
-- `GroundVehicleControl`
+- `VehicleIntent`
 - `GroundVehicleTelemetry`
 - Avian rigid-body components
 - chassis collider and authored transform
 
-The chassis is where suspension, tire, stability, and aerodynamic forces are applied.
+Optional helper layers attach additional components such as `GroundVehicleDriftConfig` and `GroundVehicleDriftTelemetry`.
 
 ### Wheel entities
 
@@ -54,17 +55,18 @@ Visible wheel meshes are separate entities referenced by `GroundVehicleWheelVisu
 ## Force Flow
 
 ```text
-GroundVehicleControl
-  -> resolve reverse/brake/steer intent
+VehicleIntent
+  -> clamp and resolve direction-change policy
   -> cast each wheel suspension probe
   -> accumulate chassis support loads
   -> resolve steering angles
-  -> estimate engine RPM and selected gear from driven-wheel speed
-  -> resolve per-wheel drive and brake requests
+  -> estimate engine RPM and active gear from driven-wheel speed
+  -> resolve per-wheel drive and brake requests from the configured powertrain
   -> compute contact-patch longitudinal and lateral forces
   -> apply anti-roll / hill-hold / yaw / airborne assists
   -> apply aerodynamic drag and downforce
-  -> aggregate telemetry and emit messages
+  -> aggregate chassis telemetry
+  -> optional drift helper reads telemetry + wheel state
   -> sync visual wheels
 ```
 
@@ -75,20 +77,14 @@ GroundVehicleControl
 1. `InputAdaptation`
 2. `Suspension`
 3. `Steering`
-4. `Drivetrain`
+4. `Powertrain`
 5. `Grip`
 6. `Stability`
 7. `Telemetry`
 
 `VisualSync` runs separately in `PostUpdate` before `TransformSystems::Propagate`.
 
-This ordering keeps state coherent inside one frame:
-
-- wheel casts happen before steering, drivetrain, and grip need load data
-- drive/brake intent is resolved before lateral correction
-- telemetry reads the final same-frame state
-- messages are emitted from final runtime state, not speculative input
-- wheel meshes follow settled runtime data instead of feeding back into physics
+The optional drift helper uses its own `GroundVehicleDriftSystems` set and is expected to run after the core telemetry pass on the same fixed schedule.
 
 ## Fixed-Step Assumptions
 
@@ -114,17 +110,36 @@ On a valid hit the runtime computes:
 
 Support force is applied at the contact point on the chassis rigid body.
 
-## Steering And Drivetrain
+## Steering
 
-Steering is separated from torque delivery:
+Steering is purely about wheel angle resolution:
 
 - `SteeringConfig` owns steering mode, max angle, rate limit, Ackermann blend, and speed reduction
 - Ackermann geometry comes from explicit overrides when provided and otherwise falls back to the wheel layout on the chassis
-- `DrivetrainConfig` owns the nested `EngineConfig`, `TransmissionConfig`, `DifferentialConfig`, brake forces, reverse rules, and drivetrain efficiency
-- `update_drivetrain_state` estimates engine RPM from driven wheel speed, blends that with a free-rev target, then selects an automatic gear before wheel torque is distributed
-- `resolve_wheel_force_requests` turns engine torque into wheel force through the selected gear, final drive, efficiency, and differential split
+- `SteeringMode::Disabled` is the escape hatch for track-drive or non-steering wheel layouts
 
-Skid steer is not faked by steering wheel angles. It resolves left/right drive demand separately and leaves steer angles at zero.
+The steering stage does not decide how torque is split. That is handled by the powertrain stage.
+
+## Powertrain
+
+`PowertrainConfig` splits torque production from delivery policy:
+
+- `engine`: authored torque curve and engine-braking behavior
+- `drive_model`: how torque is distributed
+- `gear_model`: how ratio selection works
+- explicit primary and auxiliary brake budgets
+
+Current drive-model strategies:
+
+- `DriveModel::Axle`: conventional axle-style torque delivery using authored wheel drive weights plus `DifferentialConfig`
+- `DriveModel::Track`: left/right track-drive delivery using turn-demand splitting plus `DifferentialConfig`
+
+Current gear-model strategies:
+
+- `GearModel::Automatic`: automatic forward gears plus reverse handling and shift thresholds
+- `GearModel::Fixed`: single fixed forward/reverse ratio with optional stop-then-change or immediate direction changes
+
+This is the main decoupling from the older car-shaped runtime. Input is generic, and the powertrain stage chooses how to interpret it.
 
 ## Grip Model
 
@@ -136,7 +151,7 @@ The tire model is intentionally game-ready rather than study-level:
 - simple load-sensitivity scaling
 - friction-circle clamp so combined force stays sane
 - low-speed traction helper
-- explicit handbrake multipliers for drift-oriented setups
+- optional auxiliary-brake grip shaping
 - optional Magic Formula response curves for both longitudinal and lateral force shaping
 - optional `GroundVehicleSurface` multipliers from the contacted entity or its rigid-body owner
 
@@ -156,11 +171,16 @@ All of these are opt-in or tunable through config instead of hardcoded behavior.
 
 ## Runtime Outputs
 
-The main runtime outputs are:
+Core outputs:
 
 - `GroundVehicleWheelState` per wheel
-- `GroundVehicleTelemetry` per chassis, including engine RPM and selected gear
-- messages for wheel grounded transitions, airborne state, landings, and drift state changes
+- `GroundVehicleTelemetry` per chassis
+- messages for wheel grounded transitions, airborne state, and landings
+
+Optional drift outputs:
+
+- `GroundVehicleDriftTelemetry`
+- `DriftStateChanged`
 
 Those surfaces are intended for UI, VFX, audio, telemetry overlays, BRP inspection, and E2E assertions.
 
@@ -168,6 +188,6 @@ Those surfaces are intended for UI, VFX, audio, telemetry overlays, BRP inspecti
 
 The crate verifies three layers:
 
-- pure math and policy tests for suspension, steering, torque split, and reverse rules
+- pure math and policy tests for suspension, steering, torque split, and direction-change rules
 - lightweight Bevy app tests for plugin wiring and runtime state updates
 - crate-local examples and a richer crate-local lab with E2E scenarios and screenshots

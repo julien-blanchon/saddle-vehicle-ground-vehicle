@@ -2,15 +2,16 @@
 //!
 //! Shows tire grip, torque split, stability assist, and Magic Formula tire model
 //! parameters for a purpose-built drift car.  WASD to steer/throttle, Space to
-//! brake, Shift for handbrake, R to reset.
+//! brake, Shift for auxiliary brake, R to reset.
 
 use bevy::prelude::*;
 use ground_vehicle_example_support as support;
 use ground_vehicle::{
-    DifferentialConfig, DifferentialMode, DrivetrainConfig, EngineConfig, GroundVehicle,
-    GroundVehicleControl, GroundVehicleSurface, GroundVehicleWheel, GroundVehicleWheelVisual,
-    MagicFormulaConfig, StabilityConfig, SteeringConfig, SuspensionConfig, TireGripConfig,
-    TireModel, TransmissionConfig, WheelSide,
+    AutomaticGearboxConfig, AxleDriveConfig, DifferentialConfig, DifferentialMode, DriveModel,
+    EngineConfig, GearModel, GroundVehicle, GroundVehicleDriftConfig, GroundVehicleSurface,
+    GroundVehicleWheel, GroundVehicleWheelVisual, MagicFormulaConfig, PowertrainConfig,
+    StabilityConfig, SteeringConfig, SuspensionConfig, TireGripConfig, TireModel,
+    VehicleIntent, WheelSide,
 };
 use support::{
     ExampleDriver, ResetPose, ScriptedControlOverride, driver_actions, spawn_overlay,
@@ -57,7 +58,7 @@ fn setup(
             steer_rate_rad_per_sec: 3.8,                         // fast hands
             ..default()
         },
-        drivetrain: DrivetrainConfig {
+        powertrain: PowertrainConfig {
             engine: EngineConfig {
                 peak_torque_nm: 410.0,
                 peak_torque_rpm: 4_800.0,
@@ -67,7 +68,7 @@ fn setup(
                 engine_brake_torque_nm: 95.0,
                 ..default()
             },
-            transmission: TransmissionConfig {
+            gear_model: GearModel::Automatic(AutomaticGearboxConfig {
                 final_drive_ratio: 4.10,
                 forward_gears: [3.12, 2.10, 1.55, 1.22, 1.00, 0.82],
                 forward_gear_count: 5,
@@ -75,18 +76,19 @@ fn setup(
                 shift_up_rpm: 6_300.0,
                 shift_down_rpm: 3_600.0,
                 ..default()
-            },
-            handbrake_force_newtons: 11_200.0,
-            differential: DifferentialConfig {
-                mode: DifferentialMode::Spool,                   // locked diff for easy kick-out
+            }),
+            drive_model: DriveModel::Axle(AxleDriveConfig {
+                differential: DifferentialConfig {
+                    mode: DifferentialMode::Spool,                   // locked diff for easy kick-out
+                    ..default()
+                },
                 ..default()
-            },
+            }),
+            auxiliary_brake_force_newtons: 11_200.0,
             ..default()
         },
         stability: StabilityConfig {
             yaw_stability_torque_nm_per_radps: 700.0,            // mild stability
-            drift_entry_ratio: 0.22,
-            drift_exit_ratio: 0.16,
             ..default()
         },
         ..default()
@@ -103,11 +105,20 @@ fn setup(
             Name::new("Street Drift Coupe"),
             ExampleDriver,
             vehicle,
-            GroundVehicleControl::default(),
-            ScriptedControlOverride::default(),
-            avian3d::prelude::Mass(vehicle.mass_kg),
-            avian3d::prelude::AngularInertia::new(vehicle.angular_inertia_kgm2),
-            avian3d::prelude::CenterOfMass::new(0.0, -0.35, 0.0),
+            (
+                GroundVehicleDriftConfig {
+                    entry_ratio: 0.22,
+                    exit_ratio: 0.16,
+                    ..default()
+                },
+                VehicleIntent::default(),
+                ScriptedControlOverride::default(),
+            ),
+            (
+                avian3d::prelude::Mass(vehicle.mass_kg),
+                avian3d::prelude::AngularInertia::new(vehicle.angular_inertia_kgm2),
+                avian3d::prelude::CenterOfMass::new(0.0, -0.35, 0.0),
+            ),
             ResetPose {
                 transform,
                 linear_velocity: Vec3::ZERO,
@@ -174,8 +185,8 @@ fn setup(
         longitudinal_grip: 1.18,
         lateral_grip: 0.82,                                      // deliberately low for drift
         low_speed_slip_reference_mps: 1.8,
-        handbrake_lateral_multiplier: 0.24,                      // massive lateral loss on handbrake
-        handbrake_longitudinal_multiplier: 0.12,
+        auxiliary_brake_lateral_multiplier: 0.24,                // massive lateral loss on auxiliary brake
+        auxiliary_brake_longitudinal_multiplier: 0.12,
         magic_formula: MagicFormulaConfig {
             longitudinal_peak_slip_ratio: 0.16,
             lateral_peak_slip_angle_rad: 13.0_f32.to_radians(),
@@ -235,7 +246,7 @@ fn setup(
                 steer_factor: w.steer,
                 drive_factor: w.drive,
                 brake_factor: w.brake,
-                handbrake_factor: w.handbrake,
+                auxiliary_brake_factor: w.handbrake,
                 suspension: w.suspension,
                 tire: w.tire,
             },

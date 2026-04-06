@@ -1,5 +1,5 @@
 use crate::{
-    GroundVehicle, GroundVehicleResolvedControl, GroundVehicleWheel, GroundVehicleWheelState,
+    GroundVehicle, GroundVehicleResolvedIntent, GroundVehicleWheel, GroundVehicleWheelState,
     SteeringMode, WheelSide,
 };
 use avian3d::prelude::LinearVelocity;
@@ -142,7 +142,7 @@ pub(crate) fn update_steering_angles(
     all_wheels: Query<&GroundVehicleWheel>,
     chassis: Query<(
         &GroundVehicle,
-        &GroundVehicleResolvedControl,
+        &GroundVehicleResolvedIntent,
         &LinearVelocity,
         &Transform,
     )>,
@@ -155,15 +155,15 @@ pub(crate) fn update_steering_angles(
         };
 
         let target_angle = match vehicle.steering.mode {
-            SteeringMode::SkidSteer => 0.0,
+            SteeringMode::Disabled => 0.0,
             SteeringMode::Road => {
                 let forward_speed_mps = linear_velocity.0.dot(*transform.forward());
                 let speed_factor =
                     speed_sensitive_factor(vehicle.steering, forward_speed_mps.abs());
-                let steer_sign = input.steering.signum() * wheel.steer_factor.signum();
+                let steer_sign = input.turn.signum() * wheel.steer_factor.signum();
                 let base_angle = vehicle.steering.max_angle_rad
                     * speed_factor
-                    * input.steering.abs()
+                    * input.turn.abs()
                     * wheel.steer_factor.abs()
                     * steer_sign;
 

@@ -1,5 +1,5 @@
 use crate::{
-    GroundVehicle, GroundVehicleResolvedControl, GroundVehicleSurface, GroundVehicleWheel,
+    GroundVehicle, GroundVehicleResolvedIntent, GroundVehicleSurface, GroundVehicleWheel,
     GroundVehicleWheelInternal, GroundVehicleWheelState, TireModel,
 };
 use avian3d::prelude::*;
@@ -82,7 +82,7 @@ pub(crate) fn apply_tire_forces(
     mut chassis: Query<(
         Forces,
         &GroundVehicle,
-        &GroundVehicleResolvedControl,
+        &GroundVehicleResolvedIntent,
         &Transform,
     )>,
     surfaces: Query<&GroundVehicleSurface>,
@@ -150,7 +150,8 @@ pub(crate) fn apply_tire_forces(
         let longitudinal_speed_mps = patch_velocity.dot(wheel_forward);
         let lateral_speed_mps = patch_velocity.dot(wheel_right);
         let surface = surface_for_contact(state.contact_entity, &surfaces, &collider_of);
-        let handbrake_amount = (resolved.handbrake * wheel.handbrake_factor).clamp(0.0, 1.0);
+        let auxiliary_brake_amount =
+            (resolved.auxiliary_brake * wheel.auxiliary_brake_factor).clamp(0.0, 1.0);
         let low_speed_boost = if vehicle.stability.low_speed_traction_speed_threshold_mps > 0.0
             && longitudinal_speed_mps.abs()
                 < vehicle.stability.low_speed_traction_speed_threshold_mps
@@ -166,7 +167,9 @@ pub(crate) fn apply_tire_forces(
             wheel.tire.nominal_load_newtons,
             wheel.tire.load_sensitivity,
         ) * low_speed_boost
-            * (1.0 + (wheel.tire.handbrake_longitudinal_multiplier - 1.0) * handbrake_amount);
+            * (1.0
+                + (wheel.tire.auxiliary_brake_longitudinal_multiplier - 1.0)
+                    * auxiliary_brake_amount);
         let lateral_limit = load_scaled_limit(
             state.load_newtons * wheel.tire.lateral_grip * surface.lateral_grip_scale,
             state.load_newtons,
@@ -179,7 +182,7 @@ pub(crate) fn apply_tire_forces(
         } else {
             1.0
         } * (1.0
-            + (wheel.tire.handbrake_lateral_multiplier - 1.0) * handbrake_amount);
+            + (wheel.tire.auxiliary_brake_lateral_multiplier - 1.0) * auxiliary_brake_amount);
 
         let predicted_spin_speed = state.spin_speed_rad_per_sec
             + (drive_torque_nm + brake_torque_nm + rolling_drag_torque_nm) / rotational_inertia

@@ -1,7 +1,9 @@
 use avian3d::prelude::{AngularVelocity, LinearVelocity};
 use bevy::prelude::*;
 use bevy_enhanced_input::prelude::ContextActivity;
-use ground_vehicle::{GroundVehicleControl, GroundVehicleReset, GroundVehicleTelemetry};
+use ground_vehicle::{
+    GroundVehicleDriftTelemetry, GroundVehicleReset, GroundVehicleTelemetry, VehicleIntent,
+};
 use saddle_bevy_e2e::{
     action::Action,
     actions::{assertions, inspect},
@@ -75,8 +77,8 @@ fn build_smoke() -> Scenario {
             set_control(
                 world,
                 car,
-                GroundVehicleControl {
-                    throttle: 1.0,
+                VehicleIntent {
+                    drive: 1.0,
                     ..default()
                 },
             );
@@ -128,8 +130,8 @@ fn build_smoke() -> Scenario {
             |world| {
                 let car = world.resource::<LabState>().compact;
                 world
-                    .get::<GroundVehicleTelemetry>(car)
-                    .is_some_and(|telemetry| !telemetry.drifting && telemetry.drift_ratio < 0.3)
+                    .get::<GroundVehicleDriftTelemetry>(car)
+                    .is_some_and(|drift| !drift.drifting && drift.drift_ratio < 0.3)
             },
         ))
         .then(Action::Screenshot("ground_vehicle_smoke_speed".into()))
@@ -163,7 +165,7 @@ fn build_braking() -> Scenario {
         // Phase 1: Build speed with throttle
         .then(Action::Custom(Box::new(|world: &mut World| {
             let car = world.resource::<LabState>().compact;
-            set_control(world, car, GroundVehicleControl { throttle: 1.0, ..default() });
+            set_control(world, car, VehicleIntent { drive: 1.0, ..default() });
         })))
         .then(Action::WaitUntil {
             label: "compact car built some speed".into(),
@@ -184,7 +186,7 @@ fn build_braking() -> Scenario {
                 "[e2e] pre-brake state: speed={:.3} fwd={:.3} grounded={}",
                 telemetry.speed_mps, telemetry.forward_speed_mps, telemetry.grounded_wheels,
             );
-            set_control(world, car, GroundVehicleControl { brake: 1.0, ..default() });
+            set_control(world, car, VehicleIntent { brake: 1.0, ..default() });
         })))
         .then(Action::WaitUntil {
             label: "compact car stopped".into(),
@@ -267,8 +269,8 @@ fn build_drivetrain() -> Scenario {
             set_control(
                 world,
                 car,
-                GroundVehicleControl {
-                    throttle: 1.0,
+                VehicleIntent {
+                    drive: 1.0,
                     ..default()
                 },
             );
@@ -337,7 +339,8 @@ fn build_slope() -> Scenario {
             set_control(
                 world,
                 rover,
-                GroundVehicleControl {
+                VehicleIntent {
+                    drive: 0.0,
                     brake: 1.0,
                     ..default()
                 },
@@ -401,7 +404,7 @@ fn build_slope() -> Scenario {
 
 fn build_drift() -> Scenario {
     Scenario::builder("ground_vehicle_drift")
-        .description("Verify the drift coupe enters a drift under throttle, steer, and handbrake.")
+        .description("Verify the drift coupe enters a drift under drive, turn, and auxiliary brake.")
         .then(Action::Custom(Box::new(|world: &mut World| {
             set_active_vehicle(world, ActiveVehicle::Drift);
             let drift = world.resource::<LabState>().drift;
@@ -415,10 +418,10 @@ fn build_drift() -> Scenario {
             set_control(
                 world,
                 drift,
-                GroundVehicleControl {
-                    throttle: 1.0,
-                    steering: 0.72,
-                    handbrake: 1.0,
+                VehicleIntent {
+                    drive: 1.0,
+                    turn: 0.72,
+                    auxiliary_brake: 1.0,
                     ..default()
                 },
             );
@@ -431,7 +434,7 @@ fn build_drift() -> Scenario {
             condition: Box::new(|world| {
                 let drift = world.resource::<LabState>().drift;
                 world
-                    .get::<GroundVehicleTelemetry>(drift)
+                    .get::<GroundVehicleDriftTelemetry>(drift)
                     .is_some_and(|telemetry| telemetry.drifting || telemetry.drift_ratio > 0.10)
             }),
             max_frames: 300,
@@ -442,10 +445,11 @@ fn build_drift() -> Scenario {
                 let drift = world.resource::<LabState>().drift;
                 let telemetry_ok =
                     world
+                        .get::<GroundVehicleDriftTelemetry>(drift)
+                        .is_some_and(|telemetry| telemetry.drift_ratio > 0.05)
+                    || world
                         .get::<GroundVehicleTelemetry>(drift)
-                        .is_some_and(|telemetry| {
-                            telemetry.drift_ratio > 0.05 || telemetry.lateral_speed_mps.abs() > 0.5
-                        });
+                        .is_some_and(|telemetry| telemetry.lateral_speed_mps.abs() > 0.5);
                 let transform_ok = world.get::<Transform>(drift).is_some_and(|transform| {
                     transform.rotation.to_euler(EulerRot::YXZ).0.abs() > 0.1
                 });
@@ -463,16 +467,20 @@ fn build_drift() -> Scenario {
             |world| {
                 let drift = world.resource::<LabState>().drift;
                 world
-                    .get::<GroundVehicleTelemetry>(drift)
-                    .is_some_and(|telemetry| {
-                        telemetry.lateral_speed_mps.abs() > 0.3 || telemetry.drift_ratio > 0.05
-                    })
+                    .get::<GroundVehicleDriftTelemetry>(drift)
+                    .is_some_and(|telemetry| telemetry.drift_ratio > 0.05)
+                    || world
+                        .get::<GroundVehicleTelemetry>(drift)
+                        .is_some_and(|telemetry| telemetry.lateral_speed_mps.abs() > 0.3)
             },
         ))
         .then(Action::Screenshot("ground_vehicle_drift_state".into()))
         .then(Action::WaitFrames(1))
         .then(inspect::log_component::<GroundVehicleTelemetry>(
             "ground_vehicle_drift_telemetry",
+        ))
+        .then(inspect::log_component::<GroundVehicleDriftTelemetry>(
+            "ground_vehicle_drift_helper",
         ))
         .then(assertions::log_summary("ground_vehicle_drift summary"))
         .build()
@@ -493,9 +501,9 @@ fn build_skid_steer() -> Scenario {
             set_control(
                 world,
                 skid,
-                GroundVehicleControl {
-                    throttle: 0.15,
-                    steering: 1.0,
+                VehicleIntent {
+                    drive: 0.15,
+                    turn: 1.0,
                     ..default()
                 },
             );
@@ -562,8 +570,8 @@ fn build_multi_axle() -> Scenario {
             set_control(
                 world,
                 truck,
-                GroundVehicleControl {
-                    throttle: 0.9,
+                VehicleIntent {
+                    drive: 0.9,
                     ..default()
                 },
             );
@@ -603,8 +611,8 @@ fn build_multi_axle() -> Scenario {
             |world| {
                 let truck = world.resource::<LabState>().truck;
                 world
-                    .get::<GroundVehicleTelemetry>(truck)
-                    .is_some_and(|telemetry| !telemetry.drifting && telemetry.drift_ratio < 0.2)
+                    .get::<GroundVehicleDriftTelemetry>(truck)
+                    .is_some_and(|drift| !drift.drifting && drift.drift_ratio < 0.2)
             },
         ))
         .then(Action::Screenshot(
@@ -646,7 +654,7 @@ fn set_active_vehicle(world: &mut World, active: ActiveVehicle) {
         .insert(ContextActivity::<ExampleDriver>::ACTIVE);
 }
 
-fn set_control(world: &mut World, entity: Entity, control: GroundVehicleControl) {
+fn set_control(world: &mut World, entity: Entity, control: VehicleIntent) {
     world
         .entity_mut(entity)
         .insert(ScriptedControlOverride(Some(control)));
@@ -666,6 +674,6 @@ fn reset_vehicle(world: &mut World, entity: Entity, transform: Transform, veloci
         .entity_mut(entity)
         .insert((ScriptedControlOverride(None), GroundVehicleReset));
     *world
-        .get_mut::<GroundVehicleControl>(entity)
-        .expect("vehicle control should exist") = GroundVehicleControl::default();
+        .get_mut::<VehicleIntent>(entity)
+        .expect("vehicle intent should exist") = VehicleIntent::default();
 }

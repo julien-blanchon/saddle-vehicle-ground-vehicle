@@ -2,9 +2,9 @@ use avian3d::prelude::LinearVelocity;
 use bevy::{ecs::system::RunSystemOnce, prelude::*};
 
 use crate::{
-    DifferentialConfig, DifferentialMode, DrivetrainConfig, EngineConfig, GroundVehicle,
-    GroundVehicleInternal, GroundVehicleResolvedControl, GroundVehicleWheel,
-    GroundVehicleWheelState, TransmissionConfig, WheelSide, drivetrain,
+    AutomaticGearboxConfig, DifferentialConfig, DifferentialMode, EngineConfig, GearModel,
+    GroundVehicle, GroundVehicleInternal, GroundVehicleResolvedIntent, GroundVehicleWheel,
+    GroundVehicleWheelState, PowertrainConfig, WheelSide, drivetrain,
 };
 
 #[test]
@@ -28,9 +28,9 @@ fn engine_torque_curve_peaks_in_mid_range() {
 }
 
 #[test]
-fn update_drivetrain_state_upshifts_when_engine_rpm_is_high() {
+fn update_powertrain_state_upshifts_when_engine_rpm_is_high() {
     let mut app = App::new();
-    let drivetrain = DrivetrainConfig {
+    let powertrain = PowertrainConfig {
         engine: EngineConfig {
             idle_rpm: 900.0,
             peak_torque_nm: 420.0,
@@ -38,30 +38,32 @@ fn update_drivetrain_state_upshifts_when_engine_rpm_is_high() {
             redline_rpm: 6_800.0,
             ..default()
         },
-        transmission: TransmissionConfig {
-            automatic: true,
+        gear_model: GearModel::Automatic(AutomaticGearboxConfig {
             forward_gears: [3.2, 2.1, 1.5, 1.1, 0.9, 0.8],
             forward_gear_count: 5,
             final_drive_ratio: 3.9,
             shift_up_rpm: 4_600.0,
             shift_down_rpm: 2_200.0,
             ..default()
-        },
-        differential: DifferentialConfig {
-            mode: DifferentialMode::LimitedSlip,
-            limited_slip_load_bias: 0.55,
-        },
+        }),
+        drive_model: crate::DriveModel::Axle(crate::AxleDriveConfig {
+            differential: DifferentialConfig {
+                mode: DifferentialMode::LimitedSlip,
+                limited_slip_load_bias: 0.55,
+            },
+            ..default()
+        }),
         ..default()
     };
     let chassis = app
         .world_mut()
         .spawn((
             GroundVehicle {
-                drivetrain,
+                powertrain,
                 ..default()
             },
-            GroundVehicleResolvedControl {
-                throttle: 0.95,
+            GroundVehicleResolvedIntent {
+                drive: 0.95,
                 ..default()
             },
             LinearVelocity::ZERO,
@@ -91,7 +93,7 @@ fn update_drivetrain_state_upshifts_when_engine_rpm_is_high() {
 
     let _ = app
         .world_mut()
-        .run_system_once(drivetrain::update_drivetrain_state);
+        .run_system_once(drivetrain::update_powertrain_state);
 
     let internal = app
         .world_mut()
@@ -100,5 +102,5 @@ fn update_drivetrain_state_upshifts_when_engine_rpm_is_high() {
         .expect("vehicle internal state should exist");
 
     assert!(internal.selected_gear > 1);
-    assert!(internal.engine_rpm >= drivetrain.engine.idle_rpm);
+    assert!(internal.engine_rpm >= powertrain.engine.idle_rpm);
 }

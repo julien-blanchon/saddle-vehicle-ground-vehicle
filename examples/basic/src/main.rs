@@ -1,15 +1,15 @@
 //! Basic ground vehicle example — simplest 2-axle front-steer car.
 //!
 //! Shows every vehicle component with all fields visible so readers can see
-//! exactly what goes into a minimal drivable car.  WASD to steer/throttle,
-//! Space to brake, Shift for handbrake, R to reset.
+//! exactly what goes into a minimal drivable car. WASD to steer/throttle,
+//! Space to brake, Shift for auxiliary brake, R to reset.
 
 use bevy::prelude::*;
 use ground_vehicle_example_support as support;
 use ground_vehicle::{
-    DifferentialConfig, DifferentialMode, DrivetrainConfig, EngineConfig, GroundVehicle,
-    GroundVehicleControl, GroundVehicleWheel, GroundVehicleWheelVisual, SteeringConfig,
-    SuspensionConfig, TireGripConfig, TransmissionConfig, WheelSide,
+    AutomaticGearboxConfig, AxleDriveConfig, DifferentialConfig, DifferentialMode, DriveModel,
+    EngineConfig, GearModel, GroundVehicle, GroundVehicleWheel, GroundVehicleWheelVisual,
+    PowertrainConfig, SteeringConfig, SuspensionConfig, TireGripConfig, VehicleIntent, WheelSide,
 };
 use support::{
     ExampleDriver, ResetPose, ScriptedControlOverride, driver_actions, spawn_overlay, spawn_world,
@@ -41,7 +41,7 @@ fn setup(
             max_angle_rad: 29.0_f32.to_radians(),               // 29 deg lock
             ..default()
         },
-        drivetrain: DrivetrainConfig {
+        powertrain: PowertrainConfig {
             engine: EngineConfig {
                 peak_torque_nm: 380.0,
                 peak_torque_rpm: 4_200.0,
@@ -49,7 +49,7 @@ fn setup(
                 engine_brake_torque_nm: 90.0,
                 ..default()
             },
-            transmission: TransmissionConfig {
+            gear_model: GearModel::Automatic(AutomaticGearboxConfig {
                 final_drive_ratio: 3.70,
                 forward_gears: [3.60, 2.19, 1.46, 1.09, 0.87, 0.72],
                 forward_gear_count: 5,
@@ -57,12 +57,15 @@ fn setup(
                 shift_up_rpm: 5_700.0,
                 shift_down_rpm: 2_450.0,
                 ..default()
-            },
-            brake_force_newtons: 15_000.0,
-            differential: DifferentialConfig {
-                mode: DifferentialMode::Open,
+            }),
+            drive_model: DriveModel::Axle(AxleDriveConfig {
+                differential: DifferentialConfig {
+                    mode: DifferentialMode::Open,
+                    ..default()
+                },
                 ..default()
-            },
+            }),
+            brake_force_newtons: 15_000.0,
             ..default()
         },
         ..default()
@@ -79,7 +82,7 @@ fn setup(
             Name::new("Basic Hatchback"),
             ExampleDriver,
             vehicle,
-            GroundVehicleControl::default(),
+            VehicleIntent::default(),
             ScriptedControlOverride::default(),
             avian3d::prelude::Mass(vehicle.mass_kg),
             avian3d::prelude::AngularInertia::new(vehicle.angular_inertia_kgm2),
@@ -192,7 +195,7 @@ fn setup(
                 steer_factor: steer,
                 drive_factor: drive,
                 brake_factor: brake,
-                handbrake_factor: handbrake,
+                auxiliary_brake_factor: handbrake,
                 suspension: susp,
                 tire,
             },

@@ -17,7 +17,7 @@ If too many knobs seem to fight each other, return to a simple flat-pad test wit
 - debug draw off
 - assists reduced
 - moderate speed
-- no handbrake
+- no auxiliary brake
 
 ## Light Vs Heavy Vehicles
 
@@ -35,7 +35,7 @@ Symptoms of overdoing it:
 
 - too much snap rotation under steering lift
 - curb hits bounce the whole body upward
-- drift threshold triggers constantly
+- optional drift telemetry triggers constantly
 
 ### Heavy trucks and utility vehicles
 
@@ -108,11 +108,11 @@ Guidance:
 
 Use:
 
-- `SteeringMode::SkidSteer`
+- `SteeringMode::Disabled`
 - left/right `drive_side`
-- `skid_steer_turn_scale`
+- `TrackDriveConfig::turn_split`
 
-If the vehicle pirouettes too aggressively, reduce `skid_steer_turn_scale` before weakening raw drive force.
+If the vehicle pirouettes too aggressively, reduce `turn_split` before weakening raw drive force.
 
 ## Grip And Drift
 
@@ -129,7 +129,7 @@ More sim-lite:
 
 - reduce assists
 - rely more on mass, load transfer, and tire grip
-- keep handbrake multipliers closer to realistic tire behavior
+- keep auxiliary-brake grip multipliers closer to realistic tire behavior
 
 ### Drift tuning
 
@@ -138,8 +138,8 @@ A drift-friendly setup usually needs:
 - RWD or rear-biased drive
 - more steering lock
 - lower rear `lateral_grip`
-- reduced `handbrake_lateral_multiplier`
-- lower rear `handbrake_longitudinal_multiplier`
+- reduced `auxiliary_brake_lateral_multiplier`
+- lower rear `auxiliary_brake_longitudinal_multiplier`
 - lower or softer yaw damping so the chassis can rotate
 
 Typical progression:
@@ -147,13 +147,13 @@ Typical progression:
 1. tune normal cornering first
 2. reduce rear lateral grip a little
 3. increase steering lock
-4. use handbrake multipliers to widen the breakaway window
-5. only then adjust drift state thresholds
+4. use auxiliary-brake multipliers to widen the breakaway window
+5. only then adjust optional drift-helper thresholds
 
 If the car instantly spins instead of holding a drift:
 
 - rear lateral grip is probably too low
-- handbrake multiplier is probably too aggressive
+- auxiliary-brake multiplier is probably too aggressive
 - or yaw damping is too weak for the speed range
 
 ## Slopes And Utility Vehicles
@@ -200,7 +200,7 @@ Yaw damping is a finishing pass:
 - more steering lock
 - rear drive bias
 - reduced rear lateral grip
-- strong handbrake rear multiplier reduction
+- strong rear auxiliary-brake grip reduction
 - lighter yaw damping
 
 ### Cargo truck

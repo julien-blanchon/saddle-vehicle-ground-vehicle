@@ -1,16 +1,17 @@
 //! Multi-axle ground vehicle example — 3-axle cargo truck.
 //!
 //! Demonstrates explicit per-axle suspension, tire, and drive configuration for
-//! a heavy 6-wheel truck.  WASD to steer/throttle, Space to brake, Shift for
-//! handbrake, R to reset.
+//! a heavy 6-wheel truck. WASD to steer/throttle, Space to brake, Shift for
+//! auxiliary brake, R to reset.
 
 use bevy::prelude::*;
 use ground_vehicle_example_support as support;
 use ground_vehicle::{
-    AerodynamicsConfig, DifferentialConfig, DifferentialMode, DrivetrainConfig, EngineConfig,
-    GroundVehicle, GroundVehicleControl, GroundVehicleWheel,
-    GroundVehicleWheelVisual, ReversePolicy, StabilityConfig, SteeringConfig, SuspensionConfig,
-    TireGripConfig, TransmissionConfig, WheelSide,
+    AerodynamicsConfig, AutomaticGearboxConfig, AxleDriveConfig, DifferentialConfig,
+    DifferentialMode, DirectionChangeConfig, DirectionChangePolicy, DriveModel, EngineConfig,
+    GearModel, GroundVehicle, GroundVehicleWheel, GroundVehicleWheelVisual, PowertrainConfig,
+    StabilityConfig, SteeringConfig, SuspensionConfig, TireGripConfig, VehicleIntent,
+    WheelSide,
 };
 use support::{
     ExampleDriver, ResetPose, ScriptedControlOverride, driver_actions, spawn_bump_strip,
@@ -56,7 +57,7 @@ fn setup(
             speed_reduction_end_mps: 24.0,
             ..default()
         },
-        drivetrain: DrivetrainConfig {
+        powertrain: PowertrainConfig {
             engine: EngineConfig {
                 peak_torque_nm: 1_060.0,
                 peak_torque_rpm: 1_900.0,
@@ -66,23 +67,29 @@ fn setup(
                 engine_brake_torque_nm: 280.0,
                 ..default()
             },
-            transmission: TransmissionConfig {
+            gear_model: GearModel::Automatic(AutomaticGearboxConfig {
                 final_drive_ratio: 4.85,
                 forward_gears: [6.40, 3.55, 2.35, 1.58, 1.22, 0.92],
                 forward_gear_count: 6,
                 reverse_ratio: 6.10,
                 shift_up_rpm: 2_950.0,
                 shift_down_rpm: 1_450.0,
-                clutch_coupling_speed_mps: 2.4,
+                coupling_speed_mps: 2.4,
+                direction_change: DirectionChangeConfig {
+                    policy: DirectionChangePolicy::StopThenChange,
+                    ..default()
+                },
                 ..default()
-            },
-            differential: DifferentialConfig {
-                mode: DifferentialMode::LimitedSlip,
-                limited_slip_load_bias: 0.68,
-            },
+            }),
+            drive_model: DriveModel::Axle(AxleDriveConfig {
+                differential: DifferentialConfig {
+                    mode: DifferentialMode::LimitedSlip,
+                    limited_slip_load_bias: 0.68,
+                },
+                ..default()
+            }),
             brake_force_newtons: 24_000.0,
-            handbrake_force_newtons: 16_000.0,
-            reverse_policy: ReversePolicy::StopThenReverse,
+            auxiliary_brake_force_newtons: 16_000.0,
             ..default()
         },
         stability: StabilityConfig {
@@ -110,7 +117,7 @@ fn setup(
             Name::new("Cargo Truck"),
             ExampleDriver,
             vehicle,
-            GroundVehicleControl::default(),
+            VehicleIntent::default(),
             ScriptedControlOverride::default(),
             avian3d::prelude::Mass(vehicle.mass_kg),
             avian3d::prelude::AngularInertia::new(vehicle.angular_inertia_kgm2),
@@ -223,7 +230,7 @@ fn setup(
                 steer_factor: steer,
                 drive_factor: drive,
                 brake_factor: brake,
-                handbrake_factor: handbrake,
+                auxiliary_brake_factor: handbrake,
                 suspension,
                 tire,
             },
