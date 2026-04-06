@@ -274,7 +274,8 @@ fn wheel_state_and_visuals_update_after_fixed_ticks() {
     let expected_visual =
         chassis_translation + Vec3::new(-0.82, -0.15 - suspension_length_m, -1.25);
 
-    assert!((suspension_length_m - 0.54).abs() < 0.001);
+    // Initialized at rest length (not max droop) for smoother settling.
+    assert!((suspension_length_m - 0.38).abs() < 0.001);
     assert_eq!(grounded_wheels, 0);
     assert!(wheel_visual.distance(expected_visual) < 0.001);
 }

@@ -6,6 +6,50 @@ use crate::{
 use avian3d::prelude::*;
 use bevy::prelude::*;
 
+/// Reset a vehicle's internal physics state immediately via direct `World` access.
+///
+/// Call this after teleporting or respawning a chassis entity to prevent
+/// suspension damper spikes caused by stale wheel state.  This resets the
+/// powertrain, telemetry, and every associated wheel's suspension /
+/// spin state so the next physics frame starts cleanly.
+///
+/// ```rust,ignore
+/// // In a Custom E2E action or exclusive system:
+/// ground_vehicle::reset_vehicle_state(world, chassis);
+/// ```
+pub fn reset_vehicle_state(world: &mut World, chassis: Entity) {
+    if let Some(mut internal) = world.get_mut::<GroundVehicleInternal>(chassis) {
+        *internal = GroundVehicleInternal::default();
+    }
+
+    // Collect wheel entities that belong to this chassis.
+    let wheel_entities: Vec<(Entity, f32)> = world
+        .query::<(Entity, &GroundVehicleWheel)>()
+        .iter(world)
+        .filter(|(_, wheel)| wheel.chassis == chassis)
+        .map(|(e, wheel)| (e, wheel.suspension.rest_length_m))
+        .collect();
+
+    for (wheel_entity, rest_length) in wheel_entities {
+        if let Some(mut state) = world.get_mut::<GroundVehicleWheelState>(wheel_entity) {
+            *state = GroundVehicleWheelState {
+                suspension_length_m: rest_length,
+                contact_normal: Vec3::Y,
+                ..default()
+            };
+        }
+        if let Some(mut internal) = world.get_mut::<GroundVehicleWheelInternal>(wheel_entity) {
+            *internal = GroundVehicleWheelInternal {
+                previous_suspension_length_m: rest_length,
+                ..default()
+            };
+        }
+    }
+
+    // Remove the marker if present so the deferred system doesn't double-reset.
+    world.entity_mut(chassis).remove::<GroundVehicleReset>();
+}
+
 #[derive(Resource, Default)]
 pub(crate) struct GroundVehicleRuntime(pub bool);
 
@@ -49,7 +93,9 @@ pub(crate) fn sync_new_wheel_state(
     >,
 ) {
     for (wheel, mut state, mut internal) in &mut wheels {
-        let length = wheel.suspension.max_length();
+        // Start at rest length so the suspension provides immediate support
+        // instead of starting at full droop with zero force.
+        let length = wheel.suspension.rest_length_m;
         state.suspension_length_m = length;
         state.contact_normal = Vec3::Y;
         internal.previous_suspension_length_m = length;
@@ -69,7 +115,8 @@ pub(crate) fn process_vehicle_resets(
         *internal = GroundVehicleInternal::default();
         for (wheel, mut state, mut wheel_internal) in &mut wheels {
             if wheel.chassis == entity {
-                let rest_length = wheel.suspension.max_length();
+                // Use rest length (not max droop) for immediate support after reset.
+                let rest_length = wheel.suspension.rest_length_m;
                 *state = GroundVehicleWheelState {
                     suspension_length_m: rest_length,
                     contact_normal: Vec3::Y,
@@ -114,8 +161,10 @@ pub(crate) fn apply_stability_helpers(
             let left_point = axle.left_contact_sum / f32::from(axle.left_count);
             let right_point = axle.right_contact_sum / f32::from(axle.right_count);
             let anti_roll_force = roll_delta * vehicle.stability.anti_roll_force_n_per_ratio;
-            forces.apply_force_at_point(-up * anti_roll_force, left_point);
-            forces.apply_force_at_point(up * anti_roll_force, right_point);
+            // When left is more compressed (roll_delta > 0), push left UP and right DOWN
+            // to resist the roll.
+            forces.apply_force_at_point(up * anti_roll_force, left_point);
+            forces.apply_force_at_point(-up * anti_roll_force, right_point);
         }
 
         if internal.grounded_wheels > 0

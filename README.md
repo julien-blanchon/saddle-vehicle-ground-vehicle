@@ -197,16 +197,44 @@ The richer standalone verification app lives under `examples/lab`:
 cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab
 ```
 
-E2E scenarios:
+### E2E Scenarios
+
+The lab includes 7 automated E2E scenarios powered by `saddle-bevy-e2e`. Each scenario resets a specific vehicle, applies scripted inputs, captures screenshots, and runs soft assertions. Run them with:
 
 ```bash
-cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_smoke
-cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_braking
-cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_slope
-cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_drift
-cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_skid_steer
-cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_multi_axle
-cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_drivetrain
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- <scenario_name>
+```
+
+| Scenario | Vehicle | What it verifies |
+|---|---|---|
+| `ground_vehicle_smoke` | Compact car | Settles on ground, builds forward speed under throttle, stays out of drift |
+| `ground_vehicle_braking` | Compact car | Builds speed then brakes to a stop, maintains ground contact, no wild yaw |
+| `ground_vehicle_drivetrain` | Compact car | Upshifts under sustained throttle, engine RPM stays in valid range |
+| `ground_vehicle_slope` | Rover | Holds position on an inclined ramp under brake, stays grounded, detects slope normal |
+| `ground_vehicle_drift` | Drift coupe | Enters a drift with throttle + turn + aux brake, shows lateral movement, stays grounded |
+| `ground_vehicle_skid_steer` | Skid vehicle | Yaws via left/right drive split (not wheel steer), keeps all wheels on ground |
+| `ground_vehicle_multi_axle` | Cargo truck | Stays upright and grounded while crossing a bump course, no drift state |
+
+Each scenario writes its output to `examples/e2e_output/<scenario_name>/`:
+- `log.txt` — timestamped action log with pass/fail results
+- `*.png` — screenshots at key moments (start, mid, end states)
+
+Add `--handoff` to keep the app running after the scenario for interactive debugging:
+
+```bash
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_smoke --handoff
+```
+
+### Resetting Vehicles
+
+When teleporting a vehicle (e.g. for respawn or scenario reset), use `reset_vehicle_state` to flush the internal wheel/powertrain state immediately. Without this, stale suspension history causes a damper force spike on the first physics frame after teleport:
+
+```rust
+// In an exclusive system or Custom E2E action with &mut World:
+*world.get_mut::<Transform>(chassis).unwrap() = new_transform;
+*world.get_mut::<LinearVelocity>(chassis).unwrap() = LinearVelocity::ZERO;
+*world.get_mut::<AngularVelocity>(chassis).unwrap() = AngularVelocity::ZERO;
+ground_vehicle::reset_vehicle_state(world, chassis);
 ```
 
 ## BRP

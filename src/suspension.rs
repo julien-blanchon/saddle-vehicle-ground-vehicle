@@ -13,7 +13,11 @@ pub(crate) fn suspension_force(
 ) -> (f32, f32, f32) {
     let compression_m = (suspension.rest_length_m - current_length_m).max(0.0);
     let bump_stop_m = (suspension.min_length() - current_length_m).max(0.0);
-    let suspension_velocity_mps = (previous_length_m - current_length_m) / dt.max(0.000_1);
+    let raw_velocity_mps = (previous_length_m - current_length_m) / dt.max(0.000_1);
+    // Clamp velocity to prevent force spikes from teleportation or reset
+    // discontinuities (where previous_length suddenly differs from current).
+    // ±4 m/s covers aggressive off-road; anything beyond is a teleport.
+    let suspension_velocity_mps = raw_velocity_mps.clamp(-4.0, 4.0);
     let force = compression_m * suspension.spring_strength_n_per_m
         + bump_stop_m * suspension.bump_stop_strength_n_per_m
         + suspension_velocity_mps * suspension.damper_strength_n_per_mps;
@@ -79,7 +83,7 @@ pub(crate) fn sample_wheels_and_apply_suspension(
             suspension_dir,
             &ShapeCastConfig {
                 max_distance: max_length_m,
-                ignore_origin_penetration: false,
+                ignore_origin_penetration: true,
                 ..default()
             },
             &filter,
@@ -104,9 +108,12 @@ pub(crate) fn sample_wheels_and_apply_suspension(
         };
 
         let clamped_length_m = raw_length_m.clamp(wheel.suspension.min_length(), max_length_m);
+        // Use unclamped length (but capped at max) for force computation so the
+        // bump stop can engage when the wheel compresses past min_length.
+        let force_length_m = raw_length_m.min(max_length_m);
         let (compression_m, suspension_velocity_mps, suspension_force_newtons) = suspension_force(
             wheel.suspension,
-            clamped_length_m,
+            force_length_m,
             wheel_internal.previous_suspension_length_m.max(0.001),
             dt,
         );

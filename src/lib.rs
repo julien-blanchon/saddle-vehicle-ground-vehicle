@@ -29,6 +29,7 @@ pub use drift::{
     GroundVehicleDriftSystems, GroundVehicleDriftTelemetry,
 };
 pub use messages::{VehicleBecameAirborne, VehicleLanded, WheelGroundedChanged};
+pub use systems::reset_vehicle_state;
 
 use bevy::{
     app::{FixedUpdate, PostStartup},

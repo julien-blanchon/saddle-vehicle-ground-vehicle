@@ -2,7 +2,7 @@ use avian3d::prelude::{AngularVelocity, LinearVelocity};
 use bevy::prelude::*;
 use bevy_enhanced_input::prelude::ContextActivity;
 use ground_vehicle::{
-    GroundVehicleDriftTelemetry, GroundVehicleReset, GroundVehicleTelemetry, VehicleIntent,
+    GroundVehicleDriftTelemetry, GroundVehicleTelemetry, VehicleIntent,
 };
 use saddle_bevy_e2e::{
     action::Action,
@@ -670,9 +670,12 @@ fn reset_vehicle(world: &mut World, entity: Entity, transform: Transform, veloci
     *world
         .get_mut::<AngularVelocity>(entity)
         .expect("vehicle angular velocity should exist") = AngularVelocity(Vec3::ZERO);
+    // Reset wheel & powertrain state immediately so the suspension damper
+    // doesn't spike from stale previous_suspension_length after teleport.
+    ground_vehicle::reset_vehicle_state(world, entity);
     world
         .entity_mut(entity)
-        .insert((ScriptedControlOverride(None), GroundVehicleReset));
+        .insert(ScriptedControlOverride(None));
     *world
         .get_mut::<VehicleIntent>(entity)
         .expect("vehicle intent should exist") = VehicleIntent::default();

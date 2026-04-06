@@ -13,8 +13,8 @@ use ground_vehicle::{
     DifferentialMode, DirectionChangeConfig, DirectionChangePolicy, DriveModel, EngineConfig,
     FixedGearConfig, GearModel, GroundVehicle, GroundVehicleDebugDraw, GroundVehicleDriftConfig,
     GroundVehicleDriftPlugin, GroundVehicleDriftTelemetry, GroundVehiclePlugin,
-    GroundVehicleSurface, GroundVehicleSystems, GroundVehicleTelemetry, GroundVehicleWheel,
-    GroundVehicleWheelVisual, MagicFormulaConfig, PowertrainConfig, StabilityConfig,
+    GroundVehicleReset, GroundVehicleSurface, GroundVehicleSystems, GroundVehicleTelemetry,
+    GroundVehicleWheel, GroundVehicleWheelVisual, MagicFormulaConfig, PowertrainConfig, StabilityConfig,
     SteeringConfig, SteeringMode, SuspensionConfig, TireGripConfig, TireModel,
     TrackDriveConfig, VehicleIntent, WheelSide,
 };
@@ -1576,8 +1576,10 @@ fn clear_handbrake_on_complete(
 
 fn reset_vehicle(
     trigger: On<Start<ResetVehicleAction>>,
+    mut commands: Commands,
     mut query: Query<
         (
+            Entity,
             &ResetPose,
             &mut Transform,
             &mut LinearVelocity,
@@ -1589,6 +1591,7 @@ fn reset_vehicle(
     >,
 ) {
     let Ok((
+        entity,
         pose,
         mut transform,
         mut linear_velocity,
@@ -1604,4 +1607,5 @@ fn reset_vehicle(
     *angular_velocity = AngularVelocity(pose.angular_velocity);
     *control = VehicleIntent::default();
     scripted_override.0 = None;
+    commands.entity(entity).insert(GroundVehicleReset);
 }
