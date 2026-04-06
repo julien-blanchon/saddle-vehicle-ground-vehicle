@@ -625,7 +625,9 @@ pub fn spawn_rover_demo(
 }
 
 // ---------------------------------------------------------------------------
-// Sport Bike — narrow, light, agile motorcycle-like vehicle
+// Sport Bike — motorcycle-like vehicle with always-on upright stabilization.
+// Uses 4 narrow physics wheels for suspension but only shows 2 centered
+// visual wheels so it looks like a real motorcycle.
 // ---------------------------------------------------------------------------
 
 pub fn spawn_sport_bike_demo(
@@ -637,19 +639,114 @@ pub fn spawn_sport_bike_demo(
     pilot_controlled: bool,
 ) -> Entity {
     let vehicle = sport_bike_vehicle();
-    spawn_vehicle(
-        commands,
-        meshes,
-        materials,
-        name,
+    let body_color = Color::srgb(0.90, 0.12, 0.08);
+    let wheel_color = Color::srgb(0.06, 0.06, 0.07);
+    let chassis_size = Vec3::new(0.40, 0.55, 2.10);
+
+    let mut chassis = commands.spawn((
+        Name::new(name.to_string()),
+        ExampleDriver,
         vehicle,
-        Vec3::new(0.50, 0.65, 2.10),
-        sport_bike_wheels(),
+        VehicleIntent::default(),
+        ScriptedControlOverride::default(),
+        avian3d::prelude::Mass(vehicle.mass_kg),
+        avian3d::prelude::AngularInertia::new(vehicle.angular_inertia_kgm2),
+        avian3d::prelude::CenterOfMass::new(
+            vehicle.center_of_mass_offset.x,
+            vehicle.center_of_mass_offset.y,
+            vehicle.center_of_mass_offset.z,
+        ),
+        ResetPose {
+            transform,
+            linear_velocity: Vec3::ZERO,
+            angular_velocity: Vec3::ZERO,
+        },
+        avian3d::prelude::Collider::cuboid(chassis_size.x, chassis_size.y, chassis_size.z),
+        Mesh3d(meshes.add(Cuboid::new(chassis_size.x, chassis_size.y, chassis_size.z))),
+        MeshMaterial3d(materials.add(StandardMaterial {
+            base_color: body_color,
+            perceptual_roughness: 0.50,
+            metallic: 0.15,
+            ..default()
+        })),
         transform,
-        Color::srgb(0.90, 0.12, 0.08),
-        Color::srgb(0.06, 0.06, 0.07),
-        pilot_controlled,
-    )
+    ));
+    if pilot_controlled {
+        chassis.insert((driver_actions(), bevy_enhanced_input::prelude::ContextActivity::<ExampleDriver>::ACTIVE));
+    } else {
+        chassis.insert(bevy_enhanced_input::prelude::ContextActivity::<ExampleDriver>::INACTIVE);
+    }
+    let chassis_entity = chassis.id();
+
+    // Seat / fairing — taller than wide for motorcycle silhouette
+    commands.entity(chassis_entity).with_children(|parent| {
+        parent.spawn((
+            Name::new(format!("{name} Fairing")),
+            Mesh3d(meshes.add(Cuboid::new(
+                chassis_size.x * 0.70,
+                chassis_size.y * 0.55,
+                chassis_size.z * 0.40,
+            ))),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: body_color.mix(&Color::WHITE, 0.15),
+                perceptual_roughness: 0.40,
+                ..default()
+            })),
+            Transform::from_xyz(0.0, chassis_size.y * 0.50, 0.15),
+        ));
+    });
+
+    let wheels = sport_bike_wheels();
+    let wheel_material = materials.add(StandardMaterial {
+        base_color: wheel_color,
+        perceptual_roughness: 0.92,
+        metallic: 0.02,
+        ..default()
+    });
+
+    // Only create visible wheels for the LEFT side — positioned at center (x=0).
+    // Right-side physics wheels get no visual, so the bike looks like it has 2 wheels.
+    for (index, wheel_spec) in wheels.into_iter().enumerate() {
+        let is_left = matches!(wheel_spec.side, WheelSide::Left);
+
+        let wheel_entity = if is_left {
+            // Centered visual — the visual_offset shifts the left wheel to x=0.
+            let visual_entity = commands
+                .spawn((
+                    Name::new(format!("{name} Wheel Visual {}", wheel_spec.axle + 1)),
+                    Mesh3d(meshes.add(Cylinder::new(
+                        wheel_spec.radius_m,
+                        wheel_spec.width_m.max(0.08),
+                    ))),
+                    MeshMaterial3d(wheel_material.clone()),
+                    Transform::from_translation(
+                        transform.transform_point(Vec3::new(0.0, wheel_spec.mount_point.y, wheel_spec.mount_point.z)),
+                    ),
+                ))
+                .id();
+
+            commands.spawn((
+                Name::new(format!("{name} Wheel {}", index + 1)),
+                wheel_spec.into_wheel(chassis_entity),
+                GroundVehicleWheelVisual {
+                    visual_entity,
+                    visual_offset_local: Vec3::new(-wheel_spec.mount_point.x, 0.0, 0.0),
+                    base_rotation: Quat::from_rotation_z(std::f32::consts::FRAC_PI_2),
+                    ..default()
+                },
+            )).id()
+        } else {
+            // Right-side wheel — physics only, no visual.
+            commands.spawn((
+                Name::new(format!("{name} Wheel {}", index + 1)),
+                wheel_spec.into_wheel(chassis_entity),
+            )).id()
+        };
+
+        let _ = wheel_entity;
+    }
+
+    chassis_entity
 }
 
 fn sport_bike_vehicle() -> GroundVehicle {
@@ -705,6 +802,8 @@ fn sport_bike_vehicle() -> GroundVehicle {
             airborne_upright_torque_nm_per_rad: 4_000.0,
             low_speed_traction_boost: 1.5,
             low_speed_traction_speed_threshold_mps: 4.0,
+            // Very high always-on upright torque — the bike never tips over.
+            roll_upright_torque_nm_per_rad: 20_000.0,
         },
         aerodynamics: AerodynamicsConfig {
             drag_force_per_speed_sq: 0.14,
@@ -742,32 +841,32 @@ fn sport_bike_wheels() -> Vec<WheelSpec> {
         nominal_load_newtons: 1_200.0,
         ..default()
     };
-    // Very narrow track width — wheels almost inline for motorcycle feel.
+    // Narrow paired wheels — physics uses ±0.10 but visuals are centered.
     vec![
         WheelSpec {
             axle: 0, side: WheelSide::Left, drive_side: WheelSide::Left,
-            mount_point: Vec3::new(-0.12, -0.18, -0.72),
+            mount_point: Vec3::new(-0.10, -0.18, -0.72),
             radius_m: 0.31, width_m: 0.12, rotational_inertia_kgm2: 0.35,
             steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
             suspension: front_suspension, tire: front_tire,
         },
         WheelSpec {
             axle: 0, side: WheelSide::Right, drive_side: WheelSide::Right,
-            mount_point: Vec3::new(0.12, -0.18, -0.72),
+            mount_point: Vec3::new(0.10, -0.18, -0.72),
             radius_m: 0.31, width_m: 0.12, rotational_inertia_kgm2: 0.35,
             steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
             suspension: front_suspension, tire: front_tire,
         },
         WheelSpec {
             axle: 1, side: WheelSide::Left, drive_side: WheelSide::Left,
-            mount_point: Vec3::new(-0.12, -0.18, 0.72),
+            mount_point: Vec3::new(-0.10, -0.18, 0.72),
             radius_m: 0.32, width_m: 0.16, rotational_inertia_kgm2: 0.40,
             steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
             suspension: rear_suspension, tire: rear_tire,
         },
         WheelSpec {
             axle: 1, side: WheelSide::Right, drive_side: WheelSide::Right,
-            mount_point: Vec3::new(0.12, -0.18, 0.72),
+            mount_point: Vec3::new(0.10, -0.18, 0.72),
             radius_m: 0.32, width_m: 0.16, rotational_inertia_kgm2: 0.40,
             steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
             suspension: rear_suspension, tire: rear_tire,
@@ -855,6 +954,7 @@ fn sim_racer_vehicle() -> GroundVehicle {
             yaw_stability_torque_nm_per_radps: 600.0,
             yaw_stability_speed_threshold_mps: 8.0,
             airborne_upright_torque_nm_per_rad: 400.0,
+            roll_upright_torque_nm_per_rad: 0.0,
         },
         aerodynamics: AerodynamicsConfig {
             drag_force_per_speed_sq: 0.55,
@@ -1024,6 +1124,7 @@ fn kart_vehicle() -> GroundVehicle {
             yaw_stability_torque_nm_per_radps: 350.0,
             yaw_stability_speed_threshold_mps: 4.0,
             airborne_upright_torque_nm_per_rad: 3_000.0,
+            roll_upright_torque_nm_per_rad: 5_000.0,
         },
         aerodynamics: AerodynamicsConfig {
             drag_force_per_speed_sq: 0.18,
@@ -1179,6 +1280,7 @@ fn open_world_sedan_vehicle() -> GroundVehicle {
             yaw_stability_torque_nm_per_radps: 4_500.0,
             yaw_stability_speed_threshold_mps: 5.0,
             airborne_upright_torque_nm_per_rad: 6_000.0,
+            roll_upright_torque_nm_per_rad: 8_000.0,
         },
         aerodynamics: AerodynamicsConfig {
             drag_force_per_speed_sq: 0.55,

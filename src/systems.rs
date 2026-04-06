@@ -206,6 +206,22 @@ pub(crate) fn apply_stability_helpers(
                 forces.apply_torque(correction + damping);
             }
         }
+
+        // Always-on upright correction — keeps bikes and arcade vehicles from
+        // tipping regardless of wheel contact.
+        if vehicle.stability.roll_upright_torque_nm_per_rad > 0.0 {
+            let current_up = *transform.up();
+            let alignment_axis = current_up.cross(Vec3::Y);
+            if alignment_axis.length_squared() > 0.000_1 {
+                let tilt_angle = current_up.angle_between(Vec3::Y);
+                let correction = alignment_axis.normalize()
+                    * tilt_angle
+                    * vehicle.stability.roll_upright_torque_nm_per_rad;
+                let damping = Vec3::new(-angular_velocity.x, 0.0, -angular_velocity.z)
+                    * (vehicle.stability.roll_upright_torque_nm_per_rad * 0.20);
+                forces.apply_torque(correction + damping);
+            }
+        }
     }
 }
 

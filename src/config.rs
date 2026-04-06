@@ -397,6 +397,12 @@ pub struct StabilityConfig {
     pub yaw_stability_torque_nm_per_radps: f32,
     pub yaw_stability_speed_threshold_mps: f32,
     pub airborne_upright_torque_nm_per_rad: f32,
+    /// Always-on upright correction torque (N*m per radian of tilt).
+    /// Unlike `airborne_upright_torque_nm_per_rad` which only acts when all
+    /// wheels are off the ground, this acts every frame — grounded or not.
+    /// Set to 0.0 for normal cars. Use high values (10_000+) for motorcycles
+    /// and arcade vehicles that should never tip over.
+    pub roll_upright_torque_nm_per_rad: f32,
 }
 
 impl Default for StabilityConfig {
@@ -410,6 +416,7 @@ impl Default for StabilityConfig {
             yaw_stability_torque_nm_per_radps: 2_000.0,
             yaw_stability_speed_threshold_mps: 6.0,
             airborne_upright_torque_nm_per_rad: 1_200.0,
+            roll_upright_torque_nm_per_rad: 0.0,
         }
     }
 }

@@ -164,7 +164,7 @@ Attach `GroundVehicleDriftConfig` to the same entity as `GroundVehicle`. The dri
 - Multi-axle cargo trucks
 - Left/right track-drive or skid-steer style vehicles through `DriveModel::Track`
 - Single-speed or automatic geared powertrains
-- Narrow motorcycle-feel vehicles with strong upright stabilization
+- Narrow motorcycle-feel vehicles with always-on upright stabilization (`roll_upright_torque_nm_per_rad`)
 - Sim-racing cars with MagicFormula tires and aerodynamic downforce
 - Lightweight arcade karts with exaggerated grip and instant response
 - Heavy open-world sedans with forgiving stability and airborne self-righting
