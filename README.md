@@ -262,5 +262,6 @@ BRP_PORT=15712 uv run --active --project .codex/skills/bevy-brp/script brp extra
 
 - [Architecture](docs/architecture.md)
 - [Configuration](docs/configuration.md)
+- [Game Genres](docs/game-genres.md)
 - [Tuning](docs/tuning.md)
 - [Debugging](docs/debugging.md)
