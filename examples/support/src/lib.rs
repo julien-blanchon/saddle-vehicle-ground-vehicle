@@ -27,7 +27,7 @@ pub struct GroundVehicleExamplePane {
     pub steer_lock_deg: f32,
     #[pane(slider, min = 1.0, max = 5.0, step = 0.05)]
     pub steer_rate_rad_per_sec: f32,
-    #[pane(slider, min = 120.0, max = 1200.0, step = 10.0)]
+    #[pane(slider, min = 120.0, max = 2000.0, step = 10.0)]
     pub peak_torque_nm: f32,
     #[pane(slider, min = 1800.0, max = 7200.0, step = 50.0)]
     pub shift_up_rpm: f32,
@@ -52,7 +52,7 @@ impl Default for GroundVehicleExamplePane {
         Self {
             steer_lock_deg: 29.0,
             steer_rate_rad_per_sec: 2.8,
-            peak_torque_nm: 250.0,
+            peak_torque_nm: 620.0,
             shift_up_rpm: 5_700.0,
             shift_down_rpm: 2_450.0,
             longitudinal_grip: 1.45,
@@ -428,19 +428,20 @@ pub fn spawn_compact_car_demo(
         },
         powertrain: PowertrainConfig {
             engine: EngineConfig {
-                peak_torque_nm: 380.0,
+                peak_torque_nm: 620.0,
                 peak_torque_rpm: 4_200.0,
-                redline_rpm: 6_500.0,
-                engine_brake_torque_nm: 90.0,
+                redline_rpm: 6_800.0,
+                engine_brake_torque_nm: 120.0,
                 ..default()
             },
             gear_model: GearModel::Automatic(AutomaticGearboxConfig {
-                final_drive_ratio: 3.70,
+                final_drive_ratio: 3.40,
                 forward_gears: [3.60, 2.19, 1.46, 1.09, 0.87, 0.72],
                 forward_gear_count: 5,
                 reverse_ratio: 3.18,
-                shift_up_rpm: 5_800.0,
-                shift_down_rpm: 2_500.0,
+                shift_up_rpm: 6_000.0,
+                shift_down_rpm: 2_800.0,
+                coupling_speed_mps: 2.0,
                 ..default()
             }),
             drive_model: DriveModel::Axle(AxleDriveConfig {
@@ -450,8 +451,12 @@ pub fn spawn_compact_car_demo(
                 },
                 ..default()
             }),
-            brake_force_newtons: 15_000.0,
+            brake_force_newtons: 18_000.0,
             ..default()
+        },
+        aerodynamics: AerodynamicsConfig {
+            drag_force_per_speed_sq: 0.42,
+            downforce_per_speed_sq: 0.15,
         },
         ..default()
     };
@@ -488,21 +493,22 @@ pub fn spawn_drift_coupe_demo(
         },
         powertrain: PowertrainConfig {
             engine: EngineConfig {
-                peak_torque_nm: 410.0,
-                peak_torque_rpm: 4_800.0,
-                redline_rpm: 7_200.0,
-                idle_torque_fraction: 0.40,
-                redline_torque_fraction: 0.56,
-                engine_brake_torque_nm: 95.0,
+                peak_torque_nm: 680.0,
+                peak_torque_rpm: 5_200.0,
+                redline_rpm: 7_600.0,
+                idle_torque_fraction: 0.42,
+                redline_torque_fraction: 0.60,
+                engine_brake_torque_nm: 130.0,
                 ..default()
             },
             gear_model: GearModel::Automatic(AutomaticGearboxConfig {
-                final_drive_ratio: 4.10,
+                final_drive_ratio: 3.80,
                 forward_gears: [3.12, 2.10, 1.55, 1.22, 1.00, 0.82],
                 forward_gear_count: 5,
                 reverse_ratio: 3.00,
-                shift_up_rpm: 6_300.0,
-                shift_down_rpm: 3_600.0,
+                shift_up_rpm: 6_800.0,
+                shift_down_rpm: 3_800.0,
+                coupling_speed_mps: 2.0,
                 ..default()
             }),
             drive_model: DriveModel::Axle(AxleDriveConfig {
@@ -512,12 +518,16 @@ pub fn spawn_drift_coupe_demo(
                 },
                 ..default()
             }),
-            auxiliary_brake_force_newtons: 11_200.0,
+            auxiliary_brake_force_newtons: 14_000.0,
             ..default()
         },
         stability: StabilityConfig {
             yaw_stability_torque_nm_per_radps: 700.0,
             ..default()
+        },
+        aerodynamics: AerodynamicsConfig {
+            drag_force_per_speed_sq: 0.45,
+            downforce_per_speed_sq: 0.12,
         },
         ..default()
     };
@@ -658,22 +668,22 @@ fn sport_bike_vehicle() -> GroundVehicle {
         },
         powertrain: PowertrainConfig {
             engine: EngineConfig {
-                peak_torque_nm: 115.0,
-                peak_torque_rpm: 9_500.0,
-                redline_rpm: 13_500.0,
-                idle_torque_fraction: 0.30,
-                redline_torque_fraction: 0.65,
-                engine_brake_torque_nm: 35.0,
+                peak_torque_nm: 195.0,
+                peak_torque_rpm: 10_000.0,
+                redline_rpm: 14_000.0,
+                idle_torque_fraction: 0.35,
+                redline_torque_fraction: 0.68,
+                engine_brake_torque_nm: 45.0,
                 ..default()
             },
             gear_model: GearModel::Automatic(AutomaticGearboxConfig {
-                final_drive_ratio: 2.85,
+                final_drive_ratio: 2.65,
                 forward_gears: [2.92, 2.06, 1.60, 1.32, 1.12, 0.96],
                 forward_gear_count: 6,
                 reverse_ratio: 2.60,
-                shift_up_rpm: 12_200.0,
-                shift_down_rpm: 7_800.0,
-                coupling_speed_mps: 2.0,
+                shift_up_rpm: 12_800.0,
+                shift_down_rpm: 8_200.0,
+                coupling_speed_mps: 1.2,
                 ..default()
             }),
             drive_model: DriveModel::Axle(AxleDriveConfig {
@@ -697,8 +707,8 @@ fn sport_bike_vehicle() -> GroundVehicle {
             low_speed_traction_speed_threshold_mps: 4.0,
         },
         aerodynamics: AerodynamicsConfig {
-            drag_force_per_speed_sq: 0.28,
-            downforce_per_speed_sq: 0.02,
+            drag_force_per_speed_sq: 0.14,
+            downforce_per_speed_sq: 0.01,
         },
     }
 }
@@ -808,22 +818,22 @@ fn sim_racer_vehicle() -> GroundVehicle {
         },
         powertrain: PowertrainConfig {
             engine: EngineConfig {
-                peak_torque_nm: 520.0,
-                peak_torque_rpm: 5_800.0,
-                redline_rpm: 7_800.0,
-                idle_torque_fraction: 0.38,
-                redline_torque_fraction: 0.72,
-                engine_brake_torque_nm: 120.0,
+                peak_torque_nm: 820.0,
+                peak_torque_rpm: 6_200.0,
+                redline_rpm: 8_200.0,
+                idle_torque_fraction: 0.40,
+                redline_torque_fraction: 0.75,
+                engine_brake_torque_nm: 160.0,
                 ..default()
             },
             gear_model: GearModel::Automatic(AutomaticGearboxConfig {
-                final_drive_ratio: 3.44,
+                final_drive_ratio: 3.15,
                 forward_gears: [3.82, 2.20, 1.52, 1.14, 0.87, 0.68],
                 forward_gear_count: 6,
                 reverse_ratio: 3.32,
-                shift_up_rpm: 7_200.0,
-                shift_down_rpm: 4_100.0,
-                coupling_speed_mps: 3.0,
+                shift_up_rpm: 7_600.0,
+                shift_down_rpm: 4_400.0,
+                coupling_speed_mps: 2.0,
                 ..default()
             }),
             drive_model: DriveModel::Axle(AxleDriveConfig {
@@ -833,8 +843,8 @@ fn sim_racer_vehicle() -> GroundVehicle {
                 },
                 drivetrain_efficiency: 0.92,
             }),
-            brake_force_newtons: 22_000.0,
-            auxiliary_brake_force_newtons: 14_000.0,
+            brake_force_newtons: 28_000.0,
+            auxiliary_brake_force_newtons: 18_000.0,
         },
         stability: StabilityConfig {
             anti_roll_force_n_per_ratio: 10_000.0,
@@ -847,8 +857,8 @@ fn sim_racer_vehicle() -> GroundVehicle {
             airborne_upright_torque_nm_per_rad: 400.0,
         },
         aerodynamics: AerodynamicsConfig {
-            drag_force_per_speed_sq: 1.05,
-            downforce_per_speed_sq: 1.80,
+            drag_force_per_speed_sq: 0.55,
+            downforce_per_speed_sq: 1.40,
         },
     }
 }
@@ -978,18 +988,18 @@ fn kart_vehicle() -> GroundVehicle {
         },
         powertrain: PowertrainConfig {
             engine: EngineConfig {
-                peak_torque_nm: 120.0,
-                peak_torque_rpm: 5_500.0,
-                redline_rpm: 8_500.0,
-                idle_torque_fraction: 0.55,
-                redline_torque_fraction: 0.70,
-                engine_brake_torque_nm: 25.0,
+                peak_torque_nm: 210.0,
+                peak_torque_rpm: 6_000.0,
+                redline_rpm: 9_000.0,
+                idle_torque_fraction: 0.58,
+                redline_torque_fraction: 0.72,
+                engine_brake_torque_nm: 35.0,
                 ..default()
             },
             gear_model: GearModel::Fixed(FixedGearConfig {
-                forward_ratio: 8.20,
-                reverse_ratio: 6.50,
-                coupling_speed_mps: 1.0,
+                forward_ratio: 7.50,
+                reverse_ratio: 6.00,
+                coupling_speed_mps: 0.5,
                 direction_change: DirectionChangeConfig {
                     policy: DirectionChangePolicy::Immediate,
                     ..default()
@@ -1002,8 +1012,8 @@ fn kart_vehicle() -> GroundVehicle {
                 },
                 drivetrain_efficiency: 0.94,
             }),
-            brake_force_newtons: 5_000.0,
-            auxiliary_brake_force_newtons: 4_500.0,
+            brake_force_newtons: 6_500.0,
+            auxiliary_brake_force_newtons: 5_500.0,
         },
         stability: StabilityConfig {
             anti_roll_force_n_per_ratio: 3_500.0,
@@ -1016,8 +1026,8 @@ fn kart_vehicle() -> GroundVehicle {
             airborne_upright_torque_nm_per_rad: 3_000.0,
         },
         aerodynamics: AerodynamicsConfig {
-            drag_force_per_speed_sq: 0.35,
-            downforce_per_speed_sq: 0.10,
+            drag_force_per_speed_sq: 0.18,
+            downforce_per_speed_sq: 0.08,
         },
     }
 }
@@ -1132,22 +1142,22 @@ fn open_world_sedan_vehicle() -> GroundVehicle {
         },
         powertrain: PowertrainConfig {
             engine: EngineConfig {
-                peak_torque_nm: 420.0,
-                peak_torque_rpm: 4_000.0,
-                redline_rpm: 6_200.0,
-                idle_torque_fraction: 0.50,
-                redline_torque_fraction: 0.58,
-                engine_brake_torque_nm: 110.0,
+                peak_torque_nm: 720.0,
+                peak_torque_rpm: 4_200.0,
+                redline_rpm: 6_500.0,
+                idle_torque_fraction: 0.52,
+                redline_torque_fraction: 0.62,
+                engine_brake_torque_nm: 140.0,
                 ..default()
             },
             gear_model: GearModel::Automatic(AutomaticGearboxConfig {
-                final_drive_ratio: 3.55,
+                final_drive_ratio: 3.25,
                 forward_gears: [3.40, 2.10, 1.42, 1.00, 0.82, 0.68],
                 forward_gear_count: 5,
                 reverse_ratio: 3.20,
-                shift_up_rpm: 5_600.0,
-                shift_down_rpm: 2_200.0,
-                coupling_speed_mps: 3.5,
+                shift_up_rpm: 5_800.0,
+                shift_down_rpm: 2_400.0,
+                coupling_speed_mps: 2.0,
                 ..default()
             }),
             drive_model: DriveModel::Axle(AxleDriveConfig {
@@ -1157,8 +1167,8 @@ fn open_world_sedan_vehicle() -> GroundVehicle {
                 },
                 ..default()
             }),
-            brake_force_newtons: 18_000.0,
-            auxiliary_brake_force_newtons: 12_000.0,
+            brake_force_newtons: 24_000.0,
+            auxiliary_brake_force_newtons: 16_000.0,
         },
         stability: StabilityConfig {
             anti_roll_force_n_per_ratio: 12_000.0,
@@ -1171,8 +1181,8 @@ fn open_world_sedan_vehicle() -> GroundVehicle {
             airborne_upright_torque_nm_per_rad: 6_000.0,
         },
         aerodynamics: AerodynamicsConfig {
-            drag_force_per_speed_sq: 1.10,
-            downforce_per_speed_sq: 0.05,
+            drag_force_per_speed_sq: 0.55,
+            downforce_per_speed_sq: 0.04,
         },
     }
 }
@@ -1492,22 +1502,22 @@ fn cargo_truck_vehicle() -> GroundVehicle {
         },
         powertrain: PowertrainConfig {
             engine: EngineConfig {
-                peak_torque_nm: 1_060.0,
-                peak_torque_rpm: 1_900.0,
-                redline_rpm: 3_400.0,
-                idle_torque_fraction: 0.58,
-                redline_torque_fraction: 0.48,
-                engine_brake_torque_nm: 280.0,
+                peak_torque_nm: 1_650.0,
+                peak_torque_rpm: 2_000.0,
+                redline_rpm: 3_600.0,
+                idle_torque_fraction: 0.60,
+                redline_torque_fraction: 0.52,
+                engine_brake_torque_nm: 350.0,
                 ..default()
             },
             gear_model: GearModel::Automatic(AutomaticGearboxConfig {
-                final_drive_ratio: 4.85,
+                final_drive_ratio: 4.50,
                 forward_gears: [6.40, 3.55, 2.35, 1.58, 1.22, 0.92],
                 forward_gear_count: 6,
                 reverse_ratio: 6.10,
-                shift_up_rpm: 2_950.0,
-                shift_down_rpm: 1_450.0,
-                coupling_speed_mps: 2.4,
+                shift_up_rpm: 3_100.0,
+                shift_down_rpm: 1_550.0,
+                coupling_speed_mps: 1.8,
                 direction_change: DirectionChangeConfig {
                     policy: DirectionChangePolicy::StopThenChange,
                     ..default()
@@ -1534,8 +1544,8 @@ fn cargo_truck_vehicle() -> GroundVehicle {
             ..default()
         },
         aerodynamics: AerodynamicsConfig {
-            drag_force_per_speed_sq: 1.8,
-            downforce_per_speed_sq: 0.08,
+            drag_force_per_speed_sq: 0.90,
+            downforce_per_speed_sq: 0.06,
         },
     }
 }
@@ -1683,18 +1693,18 @@ fn skid_vehicle() -> GroundVehicle {
         },
         powertrain: PowertrainConfig {
             engine: EngineConfig {
-                peak_torque_nm: 720.0,
-                peak_torque_rpm: 2_200.0,
-                redline_rpm: 4_100.0,
-                idle_torque_fraction: 0.52,
-                redline_torque_fraction: 0.54,
-                engine_brake_torque_nm: 180.0,
+                peak_torque_nm: 1_150.0,
+                peak_torque_rpm: 2_400.0,
+                redline_rpm: 4_400.0,
+                idle_torque_fraction: 0.55,
+                redline_torque_fraction: 0.58,
+                engine_brake_torque_nm: 240.0,
                 ..default()
             },
             gear_model: GearModel::Fixed(FixedGearConfig {
                 forward_ratio: 5.30 * 5.40,
                 reverse_ratio: 5.10 * 5.40,
-                coupling_speed_mps: 1.5,
+                coupling_speed_mps: 1.0,
                 direction_change: DirectionChangeConfig {
                     policy: DirectionChangePolicy::Immediate,
                     ..default()
@@ -1720,8 +1730,8 @@ fn skid_vehicle() -> GroundVehicle {
             ..default()
         },
         aerodynamics: AerodynamicsConfig {
-            drag_force_per_speed_sq: 1.45,
-            downforce_per_speed_sq: 0.04,
+            drag_force_per_speed_sq: 0.75,
+            downforce_per_speed_sq: 0.03,
         },
     }
 }
@@ -1793,22 +1803,22 @@ fn rover_vehicle() -> GroundVehicle {
         },
         powertrain: PowertrainConfig {
             engine: EngineConfig {
-                peak_torque_nm: 185.0,
-                peak_torque_rpm: 2_600.0,
-                redline_rpm: 4_500.0,
+                peak_torque_nm: 320.0,
+                peak_torque_rpm: 2_800.0,
+                redline_rpm: 4_800.0,
                 idle_torque_fraction: 0.78,
                 redline_torque_fraction: 0.72,
-                engine_brake_torque_nm: 65.0,
+                engine_brake_torque_nm: 85.0,
                 ..default()
             },
             gear_model: GearModel::Automatic(AutomaticGearboxConfig {
-                final_drive_ratio: 6.10,
+                final_drive_ratio: 5.60,
                 forward_gears: [3.85, 2.35, 1.55, 1.12, 0.92, 0.78],
                 forward_gear_count: 4,
                 reverse_ratio: 3.45,
-                shift_up_rpm: 4_050.0,
-                shift_down_rpm: 2_050.0,
-                coupling_speed_mps: 1.2,
+                shift_up_rpm: 4_200.0,
+                shift_down_rpm: 2_200.0,
+                coupling_speed_mps: 0.8,
                 ..default()
             }),
             drive_model: DriveModel::Axle(AxleDriveConfig {
@@ -1832,7 +1842,7 @@ fn rover_vehicle() -> GroundVehicle {
             ..default()
         },
         aerodynamics: AerodynamicsConfig {
-            drag_force_per_speed_sq: 0.8,
+            drag_force_per_speed_sq: 0.42,
             downforce_per_speed_sq: 0.0,
         },
     }

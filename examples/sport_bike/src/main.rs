@@ -15,7 +15,7 @@ fn main() {
     app.insert_resource(GroundVehicleExamplePane {
         camera_distance: 8.0,
         camera_height: 3.5,
-        peak_torque_nm: 115.0,
+        peak_torque_nm: 195.0,
         ..default()
     });
     app.add_systems(Startup, setup);

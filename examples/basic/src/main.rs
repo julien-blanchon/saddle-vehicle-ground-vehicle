@@ -43,19 +43,20 @@ fn setup(
         },
         powertrain: PowertrainConfig {
             engine: EngineConfig {
-                peak_torque_nm: 380.0,
+                peak_torque_nm: 620.0,
                 peak_torque_rpm: 4_200.0,
-                redline_rpm: 6_500.0,
-                engine_brake_torque_nm: 90.0,
+                redline_rpm: 6_800.0,
+                engine_brake_torque_nm: 120.0,
                 ..default()
             },
             gear_model: GearModel::Automatic(AutomaticGearboxConfig {
-                final_drive_ratio: 3.70,
+                final_drive_ratio: 3.40,
                 forward_gears: [3.60, 2.19, 1.46, 1.09, 0.87, 0.72],
                 forward_gear_count: 5,
                 reverse_ratio: 3.18,
-                shift_up_rpm: 5_700.0,
-                shift_down_rpm: 2_450.0,
+                shift_up_rpm: 6_000.0,
+                shift_down_rpm: 2_800.0,
+                coupling_speed_mps: 2.0,
                 ..default()
             }),
             drive_model: DriveModel::Axle(AxleDriveConfig {
