@@ -3356,7 +3356,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "ground_vehicle_example_kart_racing"
+version = "0.1.0"
+dependencies = [
+ "avian3d",
+ "bevy",
+ "bevy_enhanced_input",
+ "ground_vehicle_example_support",
+ "saddle-pane",
+ "saddle-vehicle-ground-vehicle",
+]
+
+[[package]]
 name = "ground_vehicle_example_multi_axle"
+version = "0.1.0"
+dependencies = [
+ "avian3d",
+ "bevy",
+ "bevy_enhanced_input",
+ "ground_vehicle_example_support",
+ "saddle-pane",
+ "saddle-vehicle-ground-vehicle",
+]
+
+[[package]]
+name = "ground_vehicle_example_open_world"
+version = "0.1.0"
+dependencies = [
+ "avian3d",
+ "bevy",
+ "bevy_enhanced_input",
+ "ground_vehicle_example_support",
+ "saddle-pane",
+ "saddle-vehicle-ground-vehicle",
+]
+
+[[package]]
+name = "ground_vehicle_example_sim_racing"
 version = "0.1.0"
 dependencies = [
  "avian3d",
@@ -3381,6 +3417,18 @@ dependencies = [
 
 [[package]]
 name = "ground_vehicle_example_slope_stability"
+version = "0.1.0"
+dependencies = [
+ "avian3d",
+ "bevy",
+ "bevy_enhanced_input",
+ "ground_vehicle_example_support",
+ "saddle-pane",
+ "saddle-vehicle-ground-vehicle",
+]
+
+[[package]]
+name = "ground_vehicle_example_sport_bike"
 version = "0.1.0"
 dependencies = [
  "avian3d",

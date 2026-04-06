@@ -164,6 +164,10 @@ Attach `GroundVehicleDriftConfig` to the same entity as `GroundVehicle`. The dri
 - Multi-axle cargo trucks
 - Left/right track-drive or skid-steer style vehicles through `DriveModel::Track`
 - Single-speed or automatic geared powertrains
+- Narrow motorcycle-feel vehicles with strong upright stabilization
+- Sim-racing cars with MagicFormula tires and aerodynamic downforce
+- Lightweight arcade karts with exaggerated grip and instant response
+- Heavy open-world sedans with forgiving stability and airborne self-righting
 
 ## What The Crate Does Not Do
 
@@ -188,6 +192,10 @@ All example apps include live `saddle-pane` tuning and on-screen controls. The e
 | `driving_demo` | Checkpoint-based canyon driving demo with a scripted tiltrotor escort from `saddle-vehicle-flight` | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_driving_demo` |
 | `skid_steer` | Left/right track-drive steering for tank-like or tracked-style control | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_skid_steer` |
 | `slope_stability` | Hill hold, anti-roll, and low-speed traction on ramps and off-camber surfaces | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_slope_stability` |
+| `sport_bike` | Narrow, light motorcycle-feel vehicle with quick steering and slalom course | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_sport_bike` |
+| `sim_racing` | Realistic RWD sports car with MagicFormula tires, stiff suspension, and aero downforce | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_sim_racing` |
+| `kart_racing` | Playful Mario Kart-style kart with boost pads, ramps, oil patches, and dirt shortcuts | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_kart_racing` |
+| `open_world` | GTA-like heavy sedan with dynamic crates, bollards, ramps, and strong self-righting | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_open_world` |
 
 ## Crate-Local Lab
 

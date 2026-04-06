@@ -7,6 +7,10 @@ members = [
     "drift_tuning",
     "skid_steer",
     "slope_stability",
+    "sport_bike",
+    "sim_racing",
+    "kart_racing",
+    "open_world",
     "lab",
 ]
 resolver = "3"

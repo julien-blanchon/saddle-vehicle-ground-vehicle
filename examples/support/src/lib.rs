@@ -614,6 +614,631 @@ pub fn spawn_rover_demo(
     )
 }
 
+// ---------------------------------------------------------------------------
+// Sport Bike — narrow, light, agile motorcycle-like vehicle
+// ---------------------------------------------------------------------------
+
+pub fn spawn_sport_bike_demo(
+    commands: &mut Commands,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<StandardMaterial>,
+    name: &str,
+    transform: Transform,
+    pilot_controlled: bool,
+) -> Entity {
+    let vehicle = sport_bike_vehicle();
+    spawn_vehicle(
+        commands,
+        meshes,
+        materials,
+        name,
+        vehicle,
+        Vec3::new(0.50, 0.65, 2.10),
+        sport_bike_wheels(),
+        transform,
+        Color::srgb(0.90, 0.12, 0.08),
+        Color::srgb(0.06, 0.06, 0.07),
+        pilot_controlled,
+    )
+}
+
+fn sport_bike_vehicle() -> GroundVehicle {
+    GroundVehicle {
+        mass_kg: 220.0,
+        angular_inertia_kgm2: Vec3::new(60.0, 75.0, 90.0),
+        center_of_mass_offset: Vec3::new(0.0, -0.10, 0.05),
+        steering: SteeringConfig {
+            max_angle_rad: 45.0_f32.to_radians(),
+            steer_rate_rad_per_sec: 5.5,
+            speed_reduction_start_mps: 8.0,
+            speed_reduction_end_mps: 22.0,
+            minimum_speed_factor: 0.20,
+            ackermann_ratio: 0.0,
+            ..default()
+        },
+        powertrain: PowertrainConfig {
+            engine: EngineConfig {
+                peak_torque_nm: 115.0,
+                peak_torque_rpm: 9_500.0,
+                redline_rpm: 13_500.0,
+                idle_torque_fraction: 0.30,
+                redline_torque_fraction: 0.65,
+                engine_brake_torque_nm: 35.0,
+                ..default()
+            },
+            gear_model: GearModel::Automatic(AutomaticGearboxConfig {
+                final_drive_ratio: 2.85,
+                forward_gears: [2.92, 2.06, 1.60, 1.32, 1.12, 0.96],
+                forward_gear_count: 6,
+                reverse_ratio: 2.60,
+                shift_up_rpm: 12_200.0,
+                shift_down_rpm: 7_800.0,
+                coupling_speed_mps: 2.0,
+                ..default()
+            }),
+            drive_model: DriveModel::Axle(AxleDriveConfig {
+                differential: DifferentialConfig {
+                    mode: DifferentialMode::Spool,
+                    ..default()
+                },
+                drivetrain_efficiency: 0.95,
+            }),
+            brake_force_newtons: 4_500.0,
+            auxiliary_brake_force_newtons: 3_200.0,
+        },
+        stability: StabilityConfig {
+            anti_roll_force_n_per_ratio: 2_200.0,
+            park_hold_force_newtons: 2_000.0,
+            park_hold_speed_threshold_mps: 0.5,
+            yaw_stability_torque_nm_per_radps: 180.0,
+            yaw_stability_speed_threshold_mps: 3.0,
+            airborne_upright_torque_nm_per_rad: 4_000.0,
+            low_speed_traction_boost: 1.5,
+            low_speed_traction_speed_threshold_mps: 4.0,
+        },
+        aerodynamics: AerodynamicsConfig {
+            drag_force_per_speed_sq: 0.28,
+            downforce_per_speed_sq: 0.02,
+        },
+    }
+}
+
+fn sport_bike_wheels() -> Vec<WheelSpec> {
+    let front_suspension = SuspensionConfig {
+        rest_length_m: 0.32,
+        max_compression_m: 0.16,
+        max_droop_m: 0.12,
+        spring_strength_n_per_m: 12_000.0,
+        damper_strength_n_per_mps: 1_800.0,
+        bump_stop_strength_n_per_m: 8_000.0,
+    };
+    let rear_suspension = SuspensionConfig {
+        rest_length_m: 0.30,
+        max_compression_m: 0.14,
+        max_droop_m: 0.12,
+        spring_strength_n_per_m: 14_000.0,
+        damper_strength_n_per_mps: 2_000.0,
+        bump_stop_strength_n_per_m: 9_000.0,
+    };
+    let front_tire = TireGripConfig {
+        longitudinal_grip: 1.65,
+        lateral_grip: 1.55,
+        nominal_load_newtons: 800.0,
+        ..default()
+    };
+    let rear_tire = TireGripConfig {
+        longitudinal_grip: 1.70,
+        lateral_grip: 1.40,
+        nominal_load_newtons: 1_200.0,
+        ..default()
+    };
+    // Very narrow track width — wheels almost inline for motorcycle feel.
+    vec![
+        WheelSpec {
+            axle: 0, side: WheelSide::Left, drive_side: WheelSide::Left,
+            mount_point: Vec3::new(-0.12, -0.18, -0.72),
+            radius_m: 0.31, width_m: 0.12, rotational_inertia_kgm2: 0.35,
+            steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
+            suspension: front_suspension, tire: front_tire,
+        },
+        WheelSpec {
+            axle: 0, side: WheelSide::Right, drive_side: WheelSide::Right,
+            mount_point: Vec3::new(0.12, -0.18, -0.72),
+            radius_m: 0.31, width_m: 0.12, rotational_inertia_kgm2: 0.35,
+            steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
+            suspension: front_suspension, tire: front_tire,
+        },
+        WheelSpec {
+            axle: 1, side: WheelSide::Left, drive_side: WheelSide::Left,
+            mount_point: Vec3::new(-0.12, -0.18, 0.72),
+            radius_m: 0.32, width_m: 0.16, rotational_inertia_kgm2: 0.40,
+            steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
+            suspension: rear_suspension, tire: rear_tire,
+        },
+        WheelSpec {
+            axle: 1, side: WheelSide::Right, drive_side: WheelSide::Right,
+            mount_point: Vec3::new(0.12, -0.18, 0.72),
+            radius_m: 0.32, width_m: 0.16, rotational_inertia_kgm2: 0.40,
+            steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
+            suspension: rear_suspension, tire: rear_tire,
+        },
+    ]
+}
+
+// ---------------------------------------------------------------------------
+// Sim Racing — realistic RWD sports car with MagicFormula tires
+// ---------------------------------------------------------------------------
+
+pub fn spawn_sim_racer_demo(
+    commands: &mut Commands,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<StandardMaterial>,
+    name: &str,
+    transform: Transform,
+    pilot_controlled: bool,
+) -> Entity {
+    let vehicle = sim_racer_vehicle();
+    spawn_vehicle(
+        commands,
+        meshes,
+        materials,
+        name,
+        vehicle,
+        Vec3::new(1.92, 0.62, 4.50),
+        sim_racer_wheels(),
+        transform,
+        Color::srgb(0.08, 0.08, 0.08),
+        Color::srgb(0.15, 0.15, 0.16),
+        pilot_controlled,
+    )
+}
+
+fn sim_racer_vehicle() -> GroundVehicle {
+    GroundVehicle {
+        mass_kg: 1_480.0,
+        angular_inertia_kgm2: Vec3::new(850.0, 1_050.0, 1_350.0),
+        center_of_mass_offset: Vec3::new(0.0, -0.32, 0.12),
+        steering: SteeringConfig {
+            max_angle_rad: 26.0_f32.to_radians(),
+            steer_rate_rad_per_sec: 3.2,
+            speed_reduction_start_mps: 18.0,
+            speed_reduction_end_mps: 55.0,
+            minimum_speed_factor: 0.28,
+            ..default()
+        },
+        powertrain: PowertrainConfig {
+            engine: EngineConfig {
+                peak_torque_nm: 520.0,
+                peak_torque_rpm: 5_800.0,
+                redline_rpm: 7_800.0,
+                idle_torque_fraction: 0.38,
+                redline_torque_fraction: 0.72,
+                engine_brake_torque_nm: 120.0,
+                ..default()
+            },
+            gear_model: GearModel::Automatic(AutomaticGearboxConfig {
+                final_drive_ratio: 3.44,
+                forward_gears: [3.82, 2.20, 1.52, 1.14, 0.87, 0.68],
+                forward_gear_count: 6,
+                reverse_ratio: 3.32,
+                shift_up_rpm: 7_200.0,
+                shift_down_rpm: 4_100.0,
+                coupling_speed_mps: 3.0,
+                ..default()
+            }),
+            drive_model: DriveModel::Axle(AxleDriveConfig {
+                differential: DifferentialConfig {
+                    mode: DifferentialMode::LimitedSlip,
+                    limited_slip_load_bias: 0.72,
+                },
+                drivetrain_efficiency: 0.92,
+            }),
+            brake_force_newtons: 22_000.0,
+            auxiliary_brake_force_newtons: 14_000.0,
+        },
+        stability: StabilityConfig {
+            anti_roll_force_n_per_ratio: 10_000.0,
+            park_hold_force_newtons: 4_000.0,
+            park_hold_speed_threshold_mps: 0.5,
+            low_speed_traction_boost: 1.0,
+            low_speed_traction_speed_threshold_mps: 2.0,
+            yaw_stability_torque_nm_per_radps: 600.0,
+            yaw_stability_speed_threshold_mps: 8.0,
+            airborne_upright_torque_nm_per_rad: 400.0,
+        },
+        aerodynamics: AerodynamicsConfig {
+            drag_force_per_speed_sq: 1.05,
+            downforce_per_speed_sq: 1.80,
+        },
+    }
+}
+
+fn sim_racer_wheels() -> Vec<WheelSpec> {
+    let front_suspension = SuspensionConfig {
+        rest_length_m: 0.28,
+        max_compression_m: 0.12,
+        max_droop_m: 0.10,
+        spring_strength_n_per_m: 42_000.0,
+        damper_strength_n_per_mps: 4_800.0,
+        bump_stop_strength_n_per_m: 24_000.0,
+    };
+    let rear_suspension = SuspensionConfig {
+        rest_length_m: 0.30,
+        max_compression_m: 0.14,
+        max_droop_m: 0.12,
+        spring_strength_n_per_m: 48_000.0,
+        damper_strength_n_per_mps: 5_200.0,
+        bump_stop_strength_n_per_m: 28_000.0,
+    };
+    let front_tire = TireGripConfig {
+        model: TireModel::MagicFormula,
+        longitudinal_grip: 1.72,
+        lateral_grip: 1.58,
+        longitudinal_stiffness: 220.0,
+        lateral_stiffness: 580.0,
+        nominal_load_newtons: 4_200.0,
+        load_sensitivity: 0.55,
+        low_speed_lateral_multiplier: 1.15,
+        magic_formula: MagicFormulaConfig {
+            longitudinal_peak_slip_ratio: 0.10,
+            lateral_peak_slip_angle_rad: 8.0_f32.to_radians(),
+            ..default()
+        },
+        ..default()
+    };
+    let rear_tire = TireGripConfig {
+        model: TireModel::MagicFormula,
+        longitudinal_grip: 1.78,
+        lateral_grip: 1.48,
+        longitudinal_stiffness: 240.0,
+        lateral_stiffness: 520.0,
+        nominal_load_newtons: 5_000.0,
+        load_sensitivity: 0.52,
+        low_speed_lateral_multiplier: 1.10,
+        magic_formula: MagicFormulaConfig {
+            longitudinal_peak_slip_ratio: 0.11,
+            lateral_peak_slip_angle_rad: 9.0_f32.to_radians(),
+            ..default()
+        },
+        ..default()
+    };
+    vec![
+        WheelSpec {
+            axle: 0, side: WheelSide::Left, drive_side: WheelSide::Left,
+            mount_point: Vec3::new(-0.84, -0.16, -1.32),
+            radius_m: 0.33, width_m: 0.26, rotational_inertia_kgm2: 1.15,
+            steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
+            suspension: front_suspension, tire: front_tire,
+        },
+        WheelSpec {
+            axle: 0, side: WheelSide::Right, drive_side: WheelSide::Right,
+            mount_point: Vec3::new(0.84, -0.16, -1.32),
+            radius_m: 0.33, width_m: 0.26, rotational_inertia_kgm2: 1.15,
+            steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
+            suspension: front_suspension, tire: front_tire,
+        },
+        WheelSpec {
+            axle: 1, side: WheelSide::Left, drive_side: WheelSide::Left,
+            mount_point: Vec3::new(-0.86, -0.16, 1.18),
+            radius_m: 0.34, width_m: 0.30, rotational_inertia_kgm2: 1.28,
+            steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
+            suspension: rear_suspension, tire: rear_tire,
+        },
+        WheelSpec {
+            axle: 1, side: WheelSide::Right, drive_side: WheelSide::Right,
+            mount_point: Vec3::new(0.86, -0.16, 1.18),
+            radius_m: 0.34, width_m: 0.30, rotational_inertia_kgm2: 1.28,
+            steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
+            suspension: rear_suspension, tire: rear_tire,
+        },
+    ]
+}
+
+// ---------------------------------------------------------------------------
+// Kart — lightweight, snappy arcade kart (Mario Kart-style)
+// ---------------------------------------------------------------------------
+
+pub fn spawn_kart_demo(
+    commands: &mut Commands,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<StandardMaterial>,
+    name: &str,
+    transform: Transform,
+    pilot_controlled: bool,
+) -> Entity {
+    let vehicle = kart_vehicle();
+    spawn_vehicle(
+        commands,
+        meshes,
+        materials,
+        name,
+        vehicle,
+        Vec3::new(1.10, 0.45, 1.90),
+        kart_wheels(),
+        transform,
+        Color::srgb(0.95, 0.35, 0.05),
+        Color::srgb(0.18, 0.18, 0.20),
+        pilot_controlled,
+    )
+}
+
+fn kart_vehicle() -> GroundVehicle {
+    GroundVehicle {
+        mass_kg: 350.0,
+        angular_inertia_kgm2: Vec3::new(80.0, 110.0, 130.0),
+        center_of_mass_offset: Vec3::new(0.0, -0.22, 0.04),
+        steering: SteeringConfig {
+            max_angle_rad: 38.0_f32.to_radians(),
+            steer_rate_rad_per_sec: 5.0,
+            speed_reduction_start_mps: 14.0,
+            speed_reduction_end_mps: 30.0,
+            minimum_speed_factor: 0.50,
+            ackermann_ratio: 0.90,
+            ..default()
+        },
+        powertrain: PowertrainConfig {
+            engine: EngineConfig {
+                peak_torque_nm: 120.0,
+                peak_torque_rpm: 5_500.0,
+                redline_rpm: 8_500.0,
+                idle_torque_fraction: 0.55,
+                redline_torque_fraction: 0.70,
+                engine_brake_torque_nm: 25.0,
+                ..default()
+            },
+            gear_model: GearModel::Fixed(FixedGearConfig {
+                forward_ratio: 8.20,
+                reverse_ratio: 6.50,
+                coupling_speed_mps: 1.0,
+                direction_change: DirectionChangeConfig {
+                    policy: DirectionChangePolicy::Immediate,
+                    ..default()
+                },
+            }),
+            drive_model: DriveModel::Axle(AxleDriveConfig {
+                differential: DifferentialConfig {
+                    mode: DifferentialMode::Spool,
+                    ..default()
+                },
+                drivetrain_efficiency: 0.94,
+            }),
+            brake_force_newtons: 5_000.0,
+            auxiliary_brake_force_newtons: 4_500.0,
+        },
+        stability: StabilityConfig {
+            anti_roll_force_n_per_ratio: 3_500.0,
+            park_hold_force_newtons: 3_000.0,
+            park_hold_speed_threshold_mps: 0.8,
+            low_speed_traction_boost: 2.0,
+            low_speed_traction_speed_threshold_mps: 5.0,
+            yaw_stability_torque_nm_per_radps: 350.0,
+            yaw_stability_speed_threshold_mps: 4.0,
+            airborne_upright_torque_nm_per_rad: 3_000.0,
+        },
+        aerodynamics: AerodynamicsConfig {
+            drag_force_per_speed_sq: 0.35,
+            downforce_per_speed_sq: 0.10,
+        },
+    }
+}
+
+fn kart_wheels() -> Vec<WheelSpec> {
+    let front_suspension = SuspensionConfig {
+        rest_length_m: 0.18,
+        max_compression_m: 0.08,
+        max_droop_m: 0.08,
+        spring_strength_n_per_m: 10_000.0,
+        damper_strength_n_per_mps: 1_400.0,
+        bump_stop_strength_n_per_m: 6_000.0,
+    };
+    let rear_suspension = SuspensionConfig {
+        rest_length_m: 0.20,
+        max_compression_m: 0.10,
+        max_droop_m: 0.08,
+        spring_strength_n_per_m: 12_000.0,
+        damper_strength_n_per_mps: 1_600.0,
+        bump_stop_strength_n_per_m: 7_000.0,
+    };
+    let front_tire = TireGripConfig {
+        longitudinal_grip: 1.90,
+        lateral_grip: 1.85,
+        low_speed_lateral_multiplier: 1.70,
+        nominal_load_newtons: 900.0,
+        load_sensitivity: 0.30,
+        ..default()
+    };
+    let rear_tire = TireGripConfig {
+        longitudinal_grip: 2.00,
+        lateral_grip: 1.60,
+        low_speed_lateral_multiplier: 1.50,
+        nominal_load_newtons: 1_000.0,
+        load_sensitivity: 0.30,
+        auxiliary_brake_lateral_multiplier: 0.50,
+        auxiliary_brake_longitudinal_multiplier: 0.30,
+        ..default()
+    };
+    vec![
+        WheelSpec {
+            axle: 0, side: WheelSide::Left, drive_side: WheelSide::Left,
+            mount_point: Vec3::new(-0.50, -0.12, -0.62),
+            radius_m: 0.16, width_m: 0.14, rotational_inertia_kgm2: 0.18,
+            steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
+            suspension: front_suspension, tire: front_tire,
+        },
+        WheelSpec {
+            axle: 0, side: WheelSide::Right, drive_side: WheelSide::Right,
+            mount_point: Vec3::new(0.50, -0.12, -0.62),
+            radius_m: 0.16, width_m: 0.14, rotational_inertia_kgm2: 0.18,
+            steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
+            suspension: front_suspension, tire: front_tire,
+        },
+        WheelSpec {
+            axle: 1, side: WheelSide::Left, drive_side: WheelSide::Left,
+            mount_point: Vec3::new(-0.52, -0.12, 0.62),
+            radius_m: 0.18, width_m: 0.18, rotational_inertia_kgm2: 0.22,
+            steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
+            suspension: rear_suspension, tire: rear_tire,
+        },
+        WheelSpec {
+            axle: 1, side: WheelSide::Right, drive_side: WheelSide::Right,
+            mount_point: Vec3::new(0.52, -0.12, 0.62),
+            radius_m: 0.18, width_m: 0.18, rotational_inertia_kgm2: 0.22,
+            steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
+            suspension: rear_suspension, tire: rear_tire,
+        },
+    ]
+}
+
+// ---------------------------------------------------------------------------
+// Open World Sedan — GTA-like heavy sedan, easy & forgiving
+// ---------------------------------------------------------------------------
+
+pub fn spawn_open_world_sedan_demo(
+    commands: &mut Commands,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<StandardMaterial>,
+    name: &str,
+    transform: Transform,
+    pilot_controlled: bool,
+) -> Entity {
+    let vehicle = open_world_sedan_vehicle();
+    spawn_vehicle(
+        commands,
+        meshes,
+        materials,
+        name,
+        vehicle,
+        Vec3::new(1.95, 0.78, 4.80),
+        open_world_sedan_wheels(),
+        transform,
+        Color::srgb(0.18, 0.22, 0.28),
+        Color::srgb(0.10, 0.10, 0.12),
+        pilot_controlled,
+    )
+}
+
+fn open_world_sedan_vehicle() -> GroundVehicle {
+    GroundVehicle {
+        mass_kg: 1_800.0,
+        angular_inertia_kgm2: Vec3::new(1_200.0, 1_500.0, 1_900.0),
+        center_of_mass_offset: Vec3::new(0.0, -0.48, 0.0),
+        steering: SteeringConfig {
+            max_angle_rad: 32.0_f32.to_radians(),
+            steer_rate_rad_per_sec: 2.6,
+            speed_reduction_start_mps: 10.0,
+            speed_reduction_end_mps: 28.0,
+            minimum_speed_factor: 0.40,
+            ..default()
+        },
+        powertrain: PowertrainConfig {
+            engine: EngineConfig {
+                peak_torque_nm: 420.0,
+                peak_torque_rpm: 4_000.0,
+                redline_rpm: 6_200.0,
+                idle_torque_fraction: 0.50,
+                redline_torque_fraction: 0.58,
+                engine_brake_torque_nm: 110.0,
+                ..default()
+            },
+            gear_model: GearModel::Automatic(AutomaticGearboxConfig {
+                final_drive_ratio: 3.55,
+                forward_gears: [3.40, 2.10, 1.42, 1.00, 0.82, 0.68],
+                forward_gear_count: 5,
+                reverse_ratio: 3.20,
+                shift_up_rpm: 5_600.0,
+                shift_down_rpm: 2_200.0,
+                coupling_speed_mps: 3.5,
+                ..default()
+            }),
+            drive_model: DriveModel::Axle(AxleDriveConfig {
+                differential: DifferentialConfig {
+                    mode: DifferentialMode::LimitedSlip,
+                    limited_slip_load_bias: 0.60,
+                },
+                ..default()
+            }),
+            brake_force_newtons: 18_000.0,
+            auxiliary_brake_force_newtons: 12_000.0,
+        },
+        stability: StabilityConfig {
+            anti_roll_force_n_per_ratio: 12_000.0,
+            park_hold_force_newtons: 8_000.0,
+            park_hold_speed_threshold_mps: 1.0,
+            low_speed_traction_boost: 1.5,
+            low_speed_traction_speed_threshold_mps: 4.0,
+            yaw_stability_torque_nm_per_radps: 4_500.0,
+            yaw_stability_speed_threshold_mps: 5.0,
+            airborne_upright_torque_nm_per_rad: 6_000.0,
+        },
+        aerodynamics: AerodynamicsConfig {
+            drag_force_per_speed_sq: 1.10,
+            downforce_per_speed_sq: 0.05,
+        },
+    }
+}
+
+fn open_world_sedan_wheels() -> Vec<WheelSpec> {
+    let front_suspension = SuspensionConfig {
+        rest_length_m: 0.36,
+        max_compression_m: 0.18,
+        max_droop_m: 0.16,
+        spring_strength_n_per_m: 32_000.0,
+        damper_strength_n_per_mps: 3_800.0,
+        bump_stop_strength_n_per_m: 20_000.0,
+    };
+    let rear_suspension = SuspensionConfig {
+        spring_strength_n_per_m: 34_000.0,
+        damper_strength_n_per_mps: 4_000.0,
+        ..front_suspension
+    };
+    let front_tire = TireGripConfig {
+        longitudinal_grip: 1.55,
+        lateral_grip: 1.45,
+        low_speed_lateral_multiplier: 1.45,
+        nominal_load_newtons: 5_000.0,
+        load_sensitivity: 0.40,
+        ..default()
+    };
+    let rear_tire = TireGripConfig {
+        longitudinal_grip: 1.50,
+        lateral_grip: 1.35,
+        low_speed_lateral_multiplier: 1.40,
+        nominal_load_newtons: 5_200.0,
+        load_sensitivity: 0.40,
+        ..default()
+    };
+    vec![
+        WheelSpec {
+            axle: 0, side: WheelSide::Left, drive_side: WheelSide::Left,
+            mount_point: Vec3::new(-0.86, -0.22, -1.35),
+            radius_m: 0.36, width_m: 0.24, rotational_inertia_kgm2: 1.15,
+            steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
+            suspension: front_suspension, tire: front_tire,
+        },
+        WheelSpec {
+            axle: 0, side: WheelSide::Right, drive_side: WheelSide::Right,
+            mount_point: Vec3::new(0.86, -0.22, -1.35),
+            radius_m: 0.36, width_m: 0.24, rotational_inertia_kgm2: 1.15,
+            steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
+            suspension: front_suspension, tire: front_tire,
+        },
+        WheelSpec {
+            axle: 1, side: WheelSide::Left, drive_side: WheelSide::Left,
+            mount_point: Vec3::new(-0.86, -0.22, 1.30),
+            radius_m: 0.37, width_m: 0.26, rotational_inertia_kgm2: 1.20,
+            steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
+            suspension: rear_suspension, tire: rear_tire,
+        },
+        WheelSpec {
+            axle: 1, side: WheelSide::Right, drive_side: WheelSide::Right,
+            mount_point: Vec3::new(0.86, -0.22, 1.30),
+            radius_m: 0.37, width_m: 0.26, rotational_inertia_kgm2: 1.20,
+            steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
+            suspension: rear_suspension, tire: rear_tire,
+        },
+    ]
+}
+
 pub fn set_camera_preset(
     camera: &mut Query<&mut FollowCamera>,
     distance: f32,
