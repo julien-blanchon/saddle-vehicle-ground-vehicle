@@ -5,14 +5,13 @@
 //! auxiliary brake, R to reset.
 
 use bevy::prelude::*;
-use ground_vehicle_example_support as support;
 use ground_vehicle::{
     AerodynamicsConfig, AutomaticGearboxConfig, AxleDriveConfig, DifferentialConfig,
     DifferentialMode, DirectionChangeConfig, DirectionChangePolicy, DriveModel, EngineConfig,
     GearModel, GroundVehicle, GroundVehicleWheel, GroundVehicleWheelVisual, PowertrainConfig,
-    StabilityConfig, SteeringConfig, SuspensionConfig, TireGripConfig, VehicleIntent,
-    WheelSide,
+    StabilityConfig, SteeringConfig, SuspensionConfig, TireGripConfig, VehicleIntent, WheelSide,
 };
+use ground_vehicle_example_support as support;
 use support::{
     ExampleDriver, ResetPose, ScriptedControlOverride, driver_actions, spawn_bump_strip,
     spawn_overlay, spawn_world,
@@ -201,7 +200,9 @@ fn setup(
     ];
 
     let wheel_color = Color::srgb(0.10, 0.10, 0.11);
-    for (i, &(axle, side, mount, radius, width, inertia, steer, drive, brake, handbrake)) in wheel_specs.iter().enumerate() {
+    for (i, &(axle, side, mount, radius, width, inertia, steer, drive, brake, handbrake)) in
+        wheel_specs.iter().enumerate()
+    {
         let visual_entity = commands
             .spawn((
                 Name::new(format!("Cargo Truck Wheel Visual {}", i + 1)),

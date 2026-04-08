@@ -1,9 +1,7 @@
 use avian3d::prelude::{AngularVelocity, LinearVelocity};
 use bevy::prelude::*;
 use bevy_enhanced_input::prelude::ContextActivity;
-use ground_vehicle::{
-    GroundVehicleDriftTelemetry, GroundVehicleTelemetry, VehicleIntent,
-};
+use ground_vehicle::{GroundVehicleDriftTelemetry, GroundVehicleTelemetry, VehicleIntent};
 use saddle_bevy_e2e::{
     action::Action,
     actions::{assertions, inspect},
@@ -15,6 +13,12 @@ use crate::{
     support::{ExampleDriver, ScriptedControlOverride},
 };
 
+#[derive(Resource, Clone, Copy)]
+struct OpenWorldCrateSnapshot {
+    entity: Entity,
+    position: Vec3,
+}
+
 pub fn scenario_by_name(name: &str) -> Option<Scenario> {
     match name {
         "ground_vehicle_smoke" => Some(build_smoke()),
@@ -24,6 +28,10 @@ pub fn scenario_by_name(name: &str) -> Option<Scenario> {
         "ground_vehicle_drift" => Some(build_drift()),
         "ground_vehicle_skid_steer" => Some(build_skid_steer()),
         "ground_vehicle_multi_axle" => Some(build_multi_axle()),
+        "ground_vehicle_kart_racing" => Some(build_kart_racing()),
+        "ground_vehicle_sport_bike" => Some(build_sport_bike()),
+        "ground_vehicle_sim_racing" => Some(build_sim_racing()),
+        "ground_vehicle_open_world" => Some(build_open_world()),
         _ => None,
     }
 }
@@ -37,14 +45,16 @@ pub fn list_scenarios() -> Vec<&'static str> {
         "ground_vehicle_drift",
         "ground_vehicle_skid_steer",
         "ground_vehicle_multi_axle",
+        "ground_vehicle_kart_racing",
+        "ground_vehicle_sport_bike",
+        "ground_vehicle_sim_racing",
+        "ground_vehicle_open_world",
     ]
 }
 
 fn build_smoke() -> Scenario {
     Scenario::builder("ground_vehicle_smoke")
-        .description(
-            "Verify the compact car settles, takes throttle, and builds forward speed.",
-        )
+        .description("Verify the compact car settles, takes throttle, and builds forward speed.")
         .then(Action::Custom(Box::new(|world: &mut World| {
             set_active_vehicle(world, ActiveVehicle::Compact);
             let car = world.resource::<LabState>().compact;
@@ -92,8 +102,7 @@ fn build_smoke() -> Scenario {
                 world
                     .get::<GroundVehicleTelemetry>(car)
                     .is_some_and(|telemetry| {
-                        telemetry.speed_mps > 1.5
-                            && telemetry.forward_speed_mps > 1.0
+                        telemetry.speed_mps > 1.5 && telemetry.forward_speed_mps > 1.0
                     })
             }),
             max_frames: 600,
@@ -117,14 +126,19 @@ fn build_smoke() -> Scenario {
             let car = world.resource::<LabState>().compact;
             world
                 .get::<GroundVehicleTelemetry>(car)
-                .is_some_and(|telemetry| telemetry.speed_mps > 1.0 && telemetry.forward_speed_mps > 0.5)
+                .is_some_and(|telemetry| {
+                    telemetry.speed_mps > 1.0 && telemetry.forward_speed_mps > 0.5
+                })
         }))
-        .then(assertions::custom("compact car has ground contact", |world| {
-            let car = world.resource::<LabState>().compact;
-            world
-                .get::<GroundVehicleTelemetry>(car)
-                .is_some_and(|telemetry| telemetry.grounded_wheels >= 2 && !telemetry.airborne)
-        }))
+        .then(assertions::custom(
+            "compact car has ground contact",
+            |world| {
+                let car = world.resource::<LabState>().compact;
+                world
+                    .get::<GroundVehicleTelemetry>(car)
+                    .is_some_and(|telemetry| telemetry.grounded_wheels >= 2 && !telemetry.airborne)
+            },
+        ))
         .then(assertions::custom(
             "compact car launch stayed out of drift",
             |world| {
@@ -145,7 +159,9 @@ fn build_smoke() -> Scenario {
 
 fn build_braking() -> Scenario {
     Scenario::builder("ground_vehicle_braking")
-        .description("Verify the compact car can brake to a stop after building speed under throttle.")
+        .description(
+            "Verify the compact car can brake to a stop after building speed under throttle.",
+        )
         .then(Action::Custom(Box::new(|world: &mut World| {
             set_active_vehicle(world, ActiveVehicle::Compact);
             let car = world.resource::<LabState>().compact;
@@ -165,7 +181,14 @@ fn build_braking() -> Scenario {
         // Phase 1: Build speed with throttle
         .then(Action::Custom(Box::new(|world: &mut World| {
             let car = world.resource::<LabState>().compact;
-            set_control(world, car, VehicleIntent { drive: 1.0, ..default() });
+            set_control(
+                world,
+                car,
+                VehicleIntent {
+                    drive: 1.0,
+                    ..default()
+                },
+            );
         })))
         .then(Action::WaitUntil {
             label: "compact car built some speed".into(),
@@ -181,20 +204,30 @@ fn build_braking() -> Scenario {
         // Phase 2: Full brake
         .then(Action::Custom(Box::new(|world: &mut World| {
             let car = world.resource::<LabState>().compact;
-            let telemetry = world.get::<GroundVehicleTelemetry>(car).copied().expect("telemetry");
+            let telemetry = world
+                .get::<GroundVehicleTelemetry>(car)
+                .copied()
+                .expect("telemetry");
             info!(
                 "[e2e] pre-brake state: speed={:.3} fwd={:.3} grounded={}",
                 telemetry.speed_mps, telemetry.forward_speed_mps, telemetry.grounded_wheels,
             );
-            set_control(world, car, VehicleIntent { brake: 1.0, ..default() });
+            set_control(
+                world,
+                car,
+                VehicleIntent {
+                    brake: 1.0,
+                    ..default()
+                },
+            );
         })))
         .then(Action::WaitUntil {
             label: "compact car stopped".into(),
             condition: Box::new(|world| {
                 let car = world.resource::<LabState>().compact;
-                world.get::<GroundVehicleTelemetry>(car).is_some_and(|telemetry| {
-                    telemetry.speed_mps < 0.3
-                })
+                world
+                    .get::<GroundVehicleTelemetry>(car)
+                    .is_some_and(|telemetry| telemetry.speed_mps < 0.3)
             }),
             max_frames: 600,
         })
@@ -204,18 +237,24 @@ fn build_braking() -> Scenario {
                 .get::<GroundVehicleTelemetry>(car)
                 .is_some_and(|telemetry| telemetry.speed_mps < 1.0)
         }))
-        .then(assertions::custom("compact car has ground contact after braking", |world| {
-            let car = world.resource::<LabState>().compact;
-            world.get::<GroundVehicleTelemetry>(car).is_some_and(|telemetry| {
-                telemetry.grounded_wheels >= 2
-            })
-        }))
-        .then(assertions::custom("compact car did not yaw wildly while braking", |world| {
-            let car = world.resource::<LabState>().compact;
-            world
-                .get::<GroundVehicleTelemetry>(car)
-                .is_some_and(|telemetry| telemetry.lateral_speed_mps.abs() < 3.0)
-        }))
+        .then(assertions::custom(
+            "compact car has ground contact after braking",
+            |world| {
+                let car = world.resource::<LabState>().compact;
+                world
+                    .get::<GroundVehicleTelemetry>(car)
+                    .is_some_and(|telemetry| telemetry.grounded_wheels >= 2)
+            },
+        ))
+        .then(assertions::custom(
+            "compact car did not yaw wildly while braking",
+            |world| {
+                let car = world.resource::<LabState>().compact;
+                world
+                    .get::<GroundVehicleTelemetry>(car)
+                    .is_some_and(|telemetry| telemetry.lateral_speed_mps.abs() < 3.0)
+            },
+        ))
         .then(Action::Screenshot("ground_vehicle_braking_stop".into()))
         .then(Action::WaitFrames(1))
         .then(Action::Custom(Box::new(|world: &mut World| {
@@ -287,8 +326,7 @@ fn build_drivetrain() -> Scenario {
                 world
                     .get::<GroundVehicleTelemetry>(car)
                     .is_some_and(|telemetry| {
-                        telemetry.selected_gear >= 2
-                            && telemetry.engine_rpm > 1_500.0
+                        telemetry.selected_gear >= 2 && telemetry.engine_rpm > 1_500.0
                     })
             }),
             max_frames: 600,
@@ -404,7 +442,9 @@ fn build_slope() -> Scenario {
 
 fn build_drift() -> Scenario {
     Scenario::builder("ground_vehicle_drift")
-        .description("Verify the drift coupe enters a drift under drive, turn, and auxiliary brake.")
+        .description(
+            "Verify the drift coupe enters a drift under drive, turn, and auxiliary brake.",
+        )
         .then(Action::Custom(Box::new(|world: &mut World| {
             set_active_vehicle(world, ActiveVehicle::Drift);
             let drift = world.resource::<LabState>().drift;
@@ -439,29 +479,28 @@ fn build_drift() -> Scenario {
             }),
             max_frames: 300,
         })
+        .then(assertions::custom("drift coupe is rotating", |world| {
+            let drift = world.resource::<LabState>().drift;
+            let telemetry_ok = world
+                .get::<GroundVehicleDriftTelemetry>(drift)
+                .is_some_and(|telemetry| telemetry.drift_ratio > 0.05)
+                || world
+                    .get::<GroundVehicleTelemetry>(drift)
+                    .is_some_and(|telemetry| telemetry.lateral_speed_mps.abs() > 0.5);
+            let transform_ok = world
+                .get::<Transform>(drift)
+                .is_some_and(|transform| transform.rotation.to_euler(EulerRot::YXZ).0.abs() > 0.1);
+            telemetry_ok || transform_ok
+        }))
         .then(assertions::custom(
-            "drift coupe is rotating",
+            "drift coupe has ground contact",
             |world| {
                 let drift = world.resource::<LabState>().drift;
-                let telemetry_ok =
-                    world
-                        .get::<GroundVehicleDriftTelemetry>(drift)
-                        .is_some_and(|telemetry| telemetry.drift_ratio > 0.05)
-                    || world
-                        .get::<GroundVehicleTelemetry>(drift)
-                        .is_some_and(|telemetry| telemetry.lateral_speed_mps.abs() > 0.5);
-                let transform_ok = world.get::<Transform>(drift).is_some_and(|transform| {
-                    transform.rotation.to_euler(EulerRot::YXZ).0.abs() > 0.1
-                });
-                telemetry_ok || transform_ok
+                world
+                    .get::<GroundVehicleTelemetry>(drift)
+                    .is_some_and(|telemetry| telemetry.grounded_wheels >= 2 && !telemetry.airborne)
             },
         ))
-        .then(assertions::custom("drift coupe has ground contact", |world| {
-            let drift = world.resource::<LabState>().drift;
-            world
-                .get::<GroundVehicleTelemetry>(drift)
-                .is_some_and(|telemetry| telemetry.grounded_wheels >= 2 && !telemetry.airborne)
-        }))
         .then(assertions::custom(
             "drift coupe showed lateral movement",
             |world| {
@@ -584,12 +623,9 @@ fn build_multi_axle() -> Scenario {
             "truck stayed upright and kept support",
             |world| {
                 let truck = world.resource::<LabState>().truck;
-                let telemetry_ok =
-                    world
-                        .get::<GroundVehicleTelemetry>(truck)
-                        .is_some_and(|telemetry| {
-                            telemetry.grounded_wheels >= 2
-                        });
+                let telemetry_ok = world
+                    .get::<GroundVehicleTelemetry>(truck)
+                    .is_some_and(|telemetry| telemetry.grounded_wheels >= 2);
                 let roll_ok = world.get::<Transform>(truck).is_some_and(|transform| {
                     let (_, _, roll) = transform.rotation.to_euler(EulerRot::YXZ);
                     roll.abs() < 1.2
@@ -626,6 +662,366 @@ fn build_multi_axle() -> Scenario {
         .build()
 }
 
+fn build_kart_racing() -> Scenario {
+    Scenario::builder("ground_vehicle_kart_racing")
+        .description(
+            "Drive the actual kart setup through its arcade lane: hit the boost pad, carry speed \
+             into a sweeping turn toward the slippery patch, and verify the kart stays planted \
+             and responsive.",
+        )
+        .then(Action::Custom(Box::new(|world: &mut World| {
+            set_active_vehicle(world, ActiveVehicle::Kart);
+            let kart = world.resource::<LabState>().kart;
+            reset_vehicle(
+                world,
+                kart,
+                Transform::from_xyz(-82.0, 0.8, -18.0),
+                Vec3::ZERO,
+            );
+        })))
+        .then(Action::WaitFrames(10))
+        .then(Action::WaitUntil {
+            label: "kart settled on ground".into(),
+            condition: Box::new(|world| {
+                let kart = world.resource::<LabState>().kart;
+                world
+                    .get::<GroundVehicleTelemetry>(kart)
+                    .is_some_and(|t| t.grounded_wheels >= 3 && t.speed_mps < 0.5)
+            }),
+            max_frames: 180,
+        })
+        .then(Action::Custom(Box::new(|world: &mut World| {
+            let kart = world.resource::<LabState>().kart;
+            set_control(
+                world,
+                kart,
+                VehicleIntent {
+                    drive: 1.0,
+                    ..default()
+                },
+            );
+        })))
+        .then(Action::WaitUntil {
+            label: "kart reached racing speed".into(),
+            condition: Box::new(|world| {
+                let kart = world.resource::<LabState>().kart;
+                world
+                    .get::<GroundVehicleTelemetry>(kart)
+                    .is_some_and(|t| t.speed_mps > 3.5)
+            }),
+            max_frames: 600,
+        })
+        .then(Action::Screenshot("kart_racing_straight".into()))
+        .then(Action::WaitFrames(1))
+        .then(Action::Custom(Box::new(|world: &mut World| {
+            let kart = world.resource::<LabState>().kart;
+            set_control(
+                world,
+                kart,
+                VehicleIntent {
+                    drive: 1.0,
+                    turn: 0.45,
+                    ..default()
+                },
+            );
+        })))
+        .then(Action::WaitFrames(90))
+        .then(assertions::custom(
+            "kart stayed grounded through the arcade lane",
+            |world| {
+                let kart = world.resource::<LabState>().kart;
+                world
+                    .get::<GroundVehicleTelemetry>(kart)
+                    .is_some_and(|t| t.grounded_wheels >= 2 && !t.airborne)
+            },
+        ))
+        .then(assertions::custom(
+            "kart maintained strong forward progress",
+            |world| {
+                let kart = world.resource::<LabState>().kart;
+                world
+                    .get::<GroundVehicleTelemetry>(kart)
+                    .is_some_and(|t| t.speed_mps > 2.0 && t.forward_speed_mps > 1.0)
+            },
+        ))
+        .then(Action::Screenshot("kart_racing_chicane_exit".into()))
+        .then(Action::WaitFrames(1))
+        .then(inspect::log_component::<GroundVehicleTelemetry>(
+            "kart_racing_telemetry",
+        ))
+        .then(assertions::log_summary(
+            "ground_vehicle_kart_racing summary",
+        ))
+        .build()
+}
+
+fn build_sport_bike() -> Scenario {
+    Scenario::builder("ground_vehicle_sport_bike")
+        .description(
+            "Use the actual sport-bike setup: accelerate through the slalom lane, hold a turn at \
+             speed, and verify the bike-style configuration stays upright and composed.",
+        )
+        .then(Action::Custom(Box::new(|world: &mut World| {
+            set_active_vehicle(world, ActiveVehicle::SportBike);
+            let bike = world.resource::<LabState>().sport_bike;
+            reset_vehicle(
+                world,
+                bike,
+                Transform::from_xyz(-82.0, 1.0, 58.0),
+                Vec3::ZERO,
+            );
+        })))
+        .then(Action::WaitFrames(10))
+        .then(Action::WaitUntil {
+            label: "sport bike settled on ground".into(),
+            condition: Box::new(|world| {
+                let bike = world.resource::<LabState>().sport_bike;
+                world
+                    .get::<GroundVehicleTelemetry>(bike)
+                    .is_some_and(|t| t.grounded_wheels >= 3 && t.speed_mps < 0.5)
+            }),
+            max_frames: 180,
+        })
+        .then(Action::Custom(Box::new(|world: &mut World| {
+            let bike = world.resource::<LabState>().sport_bike;
+            set_control(
+                world,
+                bike,
+                VehicleIntent {
+                    drive: 0.9,
+                    ..default()
+                },
+            );
+        })))
+        .then(Action::WaitUntil {
+            label: "sport bike reached sport speed".into(),
+            condition: Box::new(|world| {
+                let bike = world.resource::<LabState>().sport_bike;
+                world
+                    .get::<GroundVehicleTelemetry>(bike)
+                    .is_some_and(|t| t.speed_mps > 1.5)
+            }),
+            max_frames: 600,
+        })
+        .then(Action::Screenshot("sport_bike_straight".into()))
+        .then(Action::WaitFrames(1))
+        .then(Action::Custom(Box::new(|world: &mut World| {
+            let bike = world.resource::<LabState>().sport_bike;
+            set_control(
+                world,
+                bike,
+                VehicleIntent {
+                    drive: 0.7,
+                    turn: 0.70,
+                    ..default()
+                },
+            );
+        })))
+        .then(Action::WaitFrames(80))
+        .then(assertions::custom(
+            "sport bike stayed grounded through turn",
+            |world| {
+                let bike = world.resource::<LabState>().sport_bike;
+                world
+                    .get::<GroundVehicleTelemetry>(bike)
+                    .is_some_and(|t| t.grounded_wheels >= 2 && !t.airborne)
+            },
+        ))
+        .then(assertions::custom(
+            "sport bike roll angle reasonable (no tip-over)",
+            |world| {
+                let bike = world.resource::<LabState>().sport_bike;
+                world.get::<Transform>(bike).is_some_and(|transform| {
+                    let (_, _, roll) = transform.rotation.to_euler(EulerRot::YXZ);
+                    roll.abs() < 1.0
+                })
+            },
+        ))
+        .then(Action::Screenshot("sport_bike_turn".into()))
+        .then(Action::WaitFrames(1))
+        .then(inspect::log_component::<GroundVehicleTelemetry>(
+            "sport_bike_telemetry",
+        ))
+        .then(assertions::log_summary("ground_vehicle_sport_bike summary"))
+        .build()
+}
+
+fn build_sim_racing() -> Scenario {
+    Scenario::builder("ground_vehicle_sim_racing")
+        .description(
+            "Use the actual sim-racing setup: launch down the corridor under sustained throttle, \
+             verify it upshifts cleanly, and confirm the high-grip race car stays composed.",
+        )
+        .then(Action::Custom(Box::new(|world: &mut World| {
+            set_active_vehicle(world, ActiveVehicle::SimRacer);
+            let car = world.resource::<LabState>().sim_racer;
+            reset_vehicle(world, car, Transform::from_xyz(82.0, 1.0, 22.0), Vec3::ZERO);
+        })))
+        .then(Action::WaitFrames(10))
+        .then(Action::WaitUntil {
+            label: "sim racer settled on grid".into(),
+            condition: Box::new(|world| {
+                let car = world.resource::<LabState>().sim_racer;
+                world
+                    .get::<GroundVehicleTelemetry>(car)
+                    .is_some_and(|t| t.grounded_wheels >= 4 && t.speed_mps < 0.3)
+            }),
+            max_frames: 180,
+        })
+        .then(Action::Custom(Box::new(|world: &mut World| {
+            let car = world.resource::<LabState>().sim_racer;
+            set_control(
+                world,
+                car,
+                VehicleIntent {
+                    drive: 1.0,
+                    ..default()
+                },
+            );
+        })))
+        .then(Action::WaitFrames(15))
+        .then(Action::Screenshot("sim_racing_launch".into()))
+        .then(Action::WaitFrames(1))
+        .then(Action::WaitUntil {
+            label: "sim racer upshifted at least once".into(),
+            condition: Box::new(|world| {
+                let car = world.resource::<LabState>().sim_racer;
+                world
+                    .get::<GroundVehicleTelemetry>(car)
+                    .is_some_and(|t| t.selected_gear >= 2)
+            }),
+            max_frames: 600,
+        })
+        .then(assertions::custom(
+            "engine RPM in operating band during sim racing",
+            |world| {
+                let car = world.resource::<LabState>().sim_racer;
+                world
+                    .get::<GroundVehicleTelemetry>(car)
+                    .is_some_and(|t| t.engine_rpm > 800.0 && t.engine_rpm < 8_000.0)
+            },
+        ))
+        .then(assertions::custom(
+            "vehicle did not go airborne during lap",
+            |world| {
+                let car = world.resource::<LabState>().sim_racer;
+                world
+                    .get::<GroundVehicleTelemetry>(car)
+                    .is_some_and(|t| !t.airborne && t.grounded_wheels >= 2)
+            },
+        ))
+        .then(assertions::custom(
+            "drift ratio stayed low (sim grip mode)",
+            |world| {
+                let car = world.resource::<LabState>().sim_racer;
+                world
+                    .get::<GroundVehicleDriftTelemetry>(car)
+                    .is_some_and(|drift| drift.drift_ratio < 0.35)
+            },
+        ))
+        .then(Action::Screenshot("sim_racing_cruising".into()))
+        .then(Action::WaitFrames(1))
+        .then(inspect::log_component::<GroundVehicleTelemetry>(
+            "sim_racing_telemetry",
+        ))
+        .then(assertions::log_summary("ground_vehicle_sim_racing summary"))
+        .build()
+}
+
+fn build_open_world() -> Scenario {
+    Scenario::builder("ground_vehicle_open_world")
+        .description(
+            "Drive the open-world sedan through the obstacle lane: hit the loose crates, keep \
+             building speed, and verify the forgiving sedan remains stable after contact.",
+        )
+        .then(Action::Custom(Box::new(|world: &mut World| {
+            set_active_vehicle(world, ActiveVehicle::Sedan);
+            let sedan = world.resource::<LabState>().sedan;
+            reset_vehicle(
+                world,
+                sedan,
+                Transform::from_xyz(87.0, 1.2, -42.0),
+                Vec3::ZERO,
+            );
+        })))
+        .then(Action::WaitFrames(10))
+        .then(Action::WaitUntil {
+            label: "sedan settled on the open-world lane".into(),
+            condition: Box::new(|world| {
+                let sedan = world.resource::<LabState>().sedan;
+                world
+                    .get::<GroundVehicleTelemetry>(sedan)
+                    .is_some_and(|t| t.grounded_wheels >= 4 && t.speed_mps < 0.3)
+            }),
+            max_frames: 240,
+        })
+        .then(Action::Custom(Box::new(|world: &mut World| {
+            let crate_entity =
+                named_entity(world, "Lab Sedan Crate 1").expect("lab sedan crate should exist");
+            let position = world
+                .get::<Transform>(crate_entity)
+                .map(|transform| transform.translation)
+                .expect("lab sedan crate transform should exist");
+            world.insert_resource(OpenWorldCrateSnapshot {
+                entity: crate_entity,
+                position,
+            });
+
+            let sedan = world.resource::<LabState>().sedan;
+            set_control(
+                world,
+                sedan,
+                VehicleIntent {
+                    drive: 1.0,
+                    ..default()
+                },
+            );
+        })))
+        .then(Action::Screenshot("open_world_launch".into()))
+        .then(Action::WaitFrames(1))
+        .then(Action::WaitUntil {
+            label: "sedan struck obstacle crate".into(),
+            condition: Box::new(|world| {
+                let snapshot = world.resource::<OpenWorldCrateSnapshot>();
+                world
+                    .get::<Transform>(snapshot.entity)
+                    .is_some_and(|transform| {
+                        transform.translation.distance(snapshot.position) > 0.4
+                    })
+            }),
+            max_frames: 240,
+        })
+        .then(assertions::custom(
+            "sedan moved the obstacle crate",
+            |world| {
+                let snapshot = world.resource::<OpenWorldCrateSnapshot>();
+                world
+                    .get::<Transform>(snapshot.entity)
+                    .is_some_and(|transform| {
+                        transform.translation.distance(snapshot.position) > 0.4
+                    })
+            },
+        ))
+        .then(assertions::custom(
+            "sedan stayed driveable after contact",
+            |world| {
+                let sedan = world.resource::<LabState>().sedan;
+                world
+                    .get::<GroundVehicleTelemetry>(sedan)
+                    .is_some_and(|telemetry| {
+                        telemetry.speed_mps > 1.0 && telemetry.grounded_wheels >= 2
+                    })
+            },
+        ))
+        .then(Action::Screenshot("open_world_obstacle_lane".into()))
+        .then(Action::WaitFrames(1))
+        .then(inspect::log_component::<GroundVehicleTelemetry>(
+            "open_world_telemetry",
+        ))
+        .then(assertions::log_summary("ground_vehicle_open_world summary"))
+        .build()
+}
+
 fn set_active_vehicle(world: &mut World, active: ActiveVehicle) {
     let state = *world.resource::<LabState>();
     world.resource_mut::<LabState>().active = active;
@@ -636,6 +1032,10 @@ fn set_active_vehicle(world: &mut World, active: ActiveVehicle) {
         state.truck,
         state.skid,
         state.rover,
+        state.sport_bike,
+        state.sim_racer,
+        state.kart,
+        state.sedan,
     ] {
         world
             .entity_mut(entity)
@@ -648,10 +1048,21 @@ fn set_active_vehicle(world: &mut World, active: ActiveVehicle) {
         ActiveVehicle::Truck => state.truck,
         ActiveVehicle::Skid => state.skid,
         ActiveVehicle::Rover => state.rover,
+        ActiveVehicle::SportBike => state.sport_bike,
+        ActiveVehicle::SimRacer => state.sim_racer,
+        ActiveVehicle::Kart => state.kart,
+        ActiveVehicle::Sedan => state.sedan,
     };
     world
         .entity_mut(entity)
         .insert(ContextActivity::<ExampleDriver>::ACTIVE);
+}
+
+fn named_entity(world: &mut World, name: &str) -> Option<Entity> {
+    let mut query = world.query::<(Entity, &Name)>();
+    query
+        .iter(world)
+        .find_map(|(entity, candidate)| (candidate.as_str() == name).then_some(entity))
 }
 
 fn set_control(world: &mut World, entity: Entity, control: VehicleIntent) {

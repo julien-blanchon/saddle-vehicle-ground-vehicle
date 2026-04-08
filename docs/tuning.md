@@ -224,13 +224,13 @@ Yaw damping is a finishing pass:
 Use the examples and lab as a repeatable tuning harness:
 
 ```bash
-cargo run -p ground_vehicle --example basic
-cargo run -p ground_vehicle --example drift_tuning
-cargo run -p ground_vehicle --example multi_axle
-cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_smoke
-cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_drift
-cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_skid_steer
-cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_slope
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_basic
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_drift_tuning
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_multi_axle
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_smoke
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_drift
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_skid_steer
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- ground_vehicle_slope
 ```
 
 Keep screenshots, telemetry, and BRP inspection in the loop instead of tuning only from feel.

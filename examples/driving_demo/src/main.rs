@@ -1,11 +1,12 @@
+#[cfg(feature = "e2e")]
+mod e2e;
+#[cfg(feature = "e2e")]
+mod scenarios;
+
 use ground_vehicle_example_support as support;
 
 use bevy::prelude::*;
 use ground_vehicle::{GroundVehicleSurface, GroundVehicleTelemetry};
-use saddle_vehicle_flight::{
-    FixedWingAircraft, FlightAssist, FlightControlInput, FlightEnvironment, FlightKinematics,
-    FlightPlugin, FlightTelemetry,
-};
 use support::{spawn_drift_coupe_demo, spawn_overlay, spawn_ramp, spawn_surface_box, spawn_world};
 
 #[derive(Component)]
@@ -20,15 +21,7 @@ struct CheckpointGate {
     radius: f32,
 }
 
-#[derive(Component)]
-struct EscortAircraft;
-
-#[derive(Component)]
-struct EscortPropeller {
-    speed_rps: f32,
-}
-
-#[derive(Resource)]
+#[derive(Resource, Debug)]
 struct DrivingDemoProgress {
     next_checkpoint: usize,
     checkpoint_count: usize,
@@ -52,19 +45,13 @@ impl Default for DrivingDemoProgress {
 fn main() {
     let mut app = App::new();
     support::configure_example_app(&mut app, "ground_vehicle driving_demo", true);
-    app.add_plugins(FlightPlugin::default())
-        .init_resource::<DrivingDemoProgress>()
-        .add_systems(Startup, setup)
-        .add_systems(
-            Update,
-            (
-                animate_escort_aircraft,
-                spin_escort_propellers,
-                track_checkpoint_progress,
-                update_hud,
-            )
-                .chain(),
-        );
+    app.init_resource::<DrivingDemoProgress>();
+    #[cfg(feature = "e2e")]
+    {
+        app.add_plugins(e2e::DrivingDemoE2EPlugin);
+    }
+    app.add_systems(Startup, setup)
+        .add_systems(Update, (track_checkpoint_progress, update_hud).chain());
     app.run();
 }
 
@@ -88,7 +75,6 @@ fn setup(
     );
     commands.entity(player).insert(DrivingDemoPlayer);
 
-    spawn_escort_aircraft(&mut commands, &mut meshes, &mut materials);
     spawn_overlay(&mut commands, "ground_vehicle driving_demo");
     spawn_driving_hud(&mut commands);
 
@@ -308,90 +294,6 @@ fn spawn_checkpoint_gate(
     ));
 }
 
-fn spawn_escort_aircraft(
-    commands: &mut Commands,
-    meshes: &mut Assets<Mesh>,
-    materials: &mut Assets<StandardMaterial>,
-) {
-    let mut body = FixedWingAircraft::arcade_racer_body();
-    body.use_internal_integration = false;
-
-    let escort = commands
-        .spawn((
-            Name::new("Escort Air Cover"),
-            EscortAircraft,
-            FixedWingAircraft::arcade_racer(),
-            body,
-            FlightAssist {
-                wings_leveling: 0.16,
-                coordinated_turn: 0.14,
-                hover_leveling: 0.0,
-            },
-            FlightKinematics::default(),
-            FlightControlInput {
-                throttle: 0.72,
-                ..default()
-            },
-            FlightEnvironment {
-                surface_altitude_msl_m: Some(0.0),
-                ..default()
-            },
-            Mesh3d(meshes.add(Cuboid::new(1.6, 0.8, 6.8))),
-            MeshMaterial3d(materials.add(StandardMaterial {
-                base_color: Color::srgb(0.19, 0.27, 0.35),
-                metallic: 0.10,
-                perceptual_roughness: 0.42,
-                ..default()
-            })),
-            Transform::from_xyz(18.0, 26.0, -14.0).with_rotation(Quat::from_rotation_y(-0.8)),
-        ))
-        .id();
-
-    commands.entity(escort).with_children(|parent| {
-        parent.spawn((
-            Name::new("Escort Main Wing"),
-            Mesh3d(meshes.add(Cuboid::new(12.0, 0.16, 1.6))),
-            MeshMaterial3d(materials.add(StandardMaterial {
-                base_color: Color::srgb(0.85, 0.88, 0.92),
-                perceptual_roughness: 0.52,
-                ..default()
-            })),
-            Transform::from_xyz(0.0, 0.0, 0.0),
-        ));
-        parent.spawn((
-            Name::new("Escort Tailplane"),
-            Mesh3d(meshes.add(Cuboid::new(4.6, 0.16, 0.9))),
-            MeshMaterial3d(materials.add(StandardMaterial {
-                base_color: Color::srgb(0.85, 0.88, 0.92),
-                perceptual_roughness: 0.52,
-                ..default()
-            })),
-            Transform::from_xyz(0.0, 0.42, 2.3),
-        ));
-        parent.spawn((
-            Name::new("Escort Vertical Tail"),
-            Mesh3d(meshes.add(Cuboid::new(0.16, 1.1, 0.9))),
-            MeshMaterial3d(materials.add(StandardMaterial {
-                base_color: Color::srgb(0.85, 0.88, 0.92),
-                perceptual_roughness: 0.52,
-                ..default()
-            })),
-            Transform::from_xyz(0.0, 0.88, 2.3),
-        ));
-        parent.spawn((
-            Name::new("Escort Propeller"),
-            EscortPropeller { speed_rps: 28.0 },
-            Mesh3d(meshes.add(Cuboid::new(2.8, 0.04, 0.10))),
-            MeshMaterial3d(materials.add(StandardMaterial {
-                base_color: Color::srgb(0.08, 0.08, 0.09),
-                perceptual_roughness: 0.34,
-                ..default()
-            })),
-            Transform::from_xyz(0.0, 0.0, -3.5),
-        ));
-    });
-}
-
 fn spawn_driving_hud(commands: &mut Commands) {
     commands.spawn((
         Name::new("Driving Demo HUD"),
@@ -409,60 +311,6 @@ fn spawn_driving_hud(commands: &mut Commands) {
         },
         TextColor(Color::WHITE),
     ));
-}
-
-fn animate_escort_aircraft(
-    time: Res<Time>,
-    mut escort: Query<
-        (
-            &mut Transform,
-            &mut FlightKinematics,
-            &mut FlightControlInput,
-            &mut FlightEnvironment,
-        ),
-        With<EscortAircraft>,
-    >,
-) {
-    let Ok((mut transform, mut kinematics, mut control, mut environment)) = escort.single_mut()
-    else {
-        return;
-    };
-
-    let omega = 0.18;
-    let t = time.elapsed_secs() * omega;
-    let radius_x = 44.0;
-    let radius_z = 32.0;
-    let center = Vec3::new(0.0, 26.0, -8.0);
-    let altitude = (t * 1.7).sin() * 3.4;
-
-    let translation = center + Vec3::new(radius_x * t.cos(), altitude, radius_z * t.sin());
-    let velocity = Vec3::new(
-        -radius_x * omega * t.sin(),
-        3.4 * 1.7 * omega * (t * 1.7).cos(),
-        radius_z * omega * t.cos(),
-    );
-    let look = velocity.normalize_or_zero();
-
-    transform.translation = translation;
-    transform.look_to(look, Vec3::Y);
-    kinematics.linear_velocity_world_mps = velocity;
-    kinematics.angular_velocity_body_rps = Vec3::new(0.0, omega, 0.0);
-
-    control.pitch = -0.10;
-    control.roll = 0.18;
-    control.yaw = 0.04;
-    control.throttle = 0.74;
-    control.collective = 0.0;
-    environment.wind_world_mps = Vec3::new(2.0, 0.0, -1.5);
-}
-
-fn spin_escort_propellers(
-    time: Res<Time>,
-    mut propellers: Query<(&EscortPropeller, &mut Transform)>,
-) {
-    for (propeller, mut transform) in &mut propellers {
-        transform.rotate_local_z(propeller.speed_rps * std::f32::consts::TAU * time.delta_secs());
-    }
 }
 
 fn track_checkpoint_progress(
@@ -509,16 +357,12 @@ fn update_hud(
     time: Res<Time>,
     progress: Res<DrivingDemoProgress>,
     player: Query<&GroundVehicleTelemetry, With<DrivingDemoPlayer>>,
-    escort: Query<&FlightTelemetry, With<EscortAircraft>>,
     mut hud: Query<&mut Text, With<DrivingHud>>,
 ) {
     let Ok(mut hud) = hud.single_mut() else {
         return;
     };
     let Ok(player) = player.single() else {
-        return;
-    };
-    let Ok(escort) = escort.single() else {
         return;
     };
 
@@ -528,14 +372,12 @@ fn update_hud(
         .map_or("--".to_string(), |seconds| format!("{seconds:>5.1}s"));
 
     hud.0 = format!(
-        "Checkpoint Run\nLap {}  Next gate: {}/{}\nCurrent {:>4.1}s  Best {}\nEscort TAS {:>5.1} m/s  Alt {:>5.1} m\nPlayer speed {:>5.1} m/s  Gear {}\nObjective: clear all gates, hit the jump, and finish under escort cover.",
+        "Checkpoint Run\nLap {}  Next gate: {}/{}\nCurrent {:>4.1}s  Best {}\nPlayer speed {:>5.1} m/s  Gear {}\nObjective: clear all gates and hit the jump.",
         progress.laps_completed + 1,
         progress.next_checkpoint + 1,
         progress.checkpoint_count,
         lap_time,
         best,
-        escort.true_airspeed_mps,
-        escort.altitude_msl_m,
         player.speed_mps,
         player.selected_gear,
     );

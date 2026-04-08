@@ -5,14 +5,14 @@
 //! brake, Shift for auxiliary brake, R to reset.
 
 use bevy::prelude::*;
-use ground_vehicle_example_support as support;
 use ground_vehicle::{
     AutomaticGearboxConfig, AxleDriveConfig, DifferentialConfig, DifferentialMode, DriveModel,
     EngineConfig, GearModel, GroundVehicle, GroundVehicleDriftConfig, GroundVehicleSurface,
     GroundVehicleWheel, GroundVehicleWheelVisual, MagicFormulaConfig, PowertrainConfig,
-    StabilityConfig, SteeringConfig, SuspensionConfig, TireGripConfig, TireModel,
-    VehicleIntent, WheelSide,
+    StabilityConfig, SteeringConfig, SuspensionConfig, TireGripConfig, TireModel, VehicleIntent,
+    WheelSide,
 };
+use ground_vehicle_example_support as support;
 use support::{
     ExampleDriver, ResetPose, ScriptedControlOverride, driver_actions, spawn_overlay,
     spawn_surface_box, spawn_world,
@@ -54,8 +54,8 @@ fn setup(
         mass_kg: 1_250.0,
         angular_inertia_kgm2: Vec3::new(600.0, 760.0, 980.0),
         steering: SteeringConfig {
-            max_angle_rad: 40.0_f32.to_radians(),               // wide lock for counter-steer
-            steer_rate_rad_per_sec: 3.8,                         // fast hands
+            max_angle_rad: 40.0_f32.to_radians(), // wide lock for counter-steer
+            steer_rate_rad_per_sec: 3.8,          // fast hands
             ..default()
         },
         powertrain: PowertrainConfig {
@@ -79,7 +79,7 @@ fn setup(
             }),
             drive_model: DriveModel::Axle(AxleDriveConfig {
                 differential: DifferentialConfig {
-                    mode: DifferentialMode::Spool,                   // locked diff for easy kick-out
+                    mode: DifferentialMode::Spool, // locked diff for easy kick-out
                     ..default()
                 },
                 ..default()
@@ -88,7 +88,7 @@ fn setup(
             ..default()
         },
         stability: StabilityConfig {
-            yaw_stability_torque_nm_per_radps: 700.0,            // mild stability
+            yaw_stability_torque_nm_per_radps: 700.0, // mild stability
             ..default()
         },
         ..default()
@@ -183,9 +183,9 @@ fn setup(
     let rear_tire = TireGripConfig {
         model: TireModel::MagicFormula,
         longitudinal_grip: 1.18,
-        lateral_grip: 0.82,                                      // deliberately low for drift
+        lateral_grip: 0.82, // deliberately low for drift
         low_speed_slip_reference_mps: 1.8,
-        auxiliary_brake_lateral_multiplier: 0.24,                // massive lateral loss on auxiliary brake
+        auxiliary_brake_lateral_multiplier: 0.24, // massive lateral loss on auxiliary brake
         auxiliary_brake_longitudinal_multiplier: 0.12,
         magic_formula: MagicFormulaConfig {
             longitudinal_peak_slip_ratio: 0.16,
@@ -199,21 +199,87 @@ fn setup(
     // Wheels — front: steered only, rear: driven only (RWD)
     // ---------------------------------------------------------------------------
     struct WheelDef {
-        axle: u8, side: WheelSide, mount: Vec3,
-        radius: f32, width: f32, inertia: f32,
-        steer: f32, drive: f32, brake: f32, handbrake: f32,
-        suspension: SuspensionConfig, tire: TireGripConfig,
+        axle: u8,
+        side: WheelSide,
+        mount: Vec3,
+        radius: f32,
+        width: f32,
+        inertia: f32,
+        steer: f32,
+        drive: f32,
+        brake: f32,
+        handbrake: f32,
+        suspension: SuspensionConfig,
+        tire: TireGripConfig,
     }
 
     let wheels = [
         // Front-left  (steered, not driven)
-        WheelDef { axle: 0, side: WheelSide::Left,  mount: Vec3::new(-0.82, -0.20, -1.24), radius: 0.36, width: 0.24, inertia: 1.02, steer: 1.0, drive: 0.0, brake: 1.0, handbrake: 0.0, suspension: base_suspension, tire: front_tire },
+        WheelDef {
+            axle: 0,
+            side: WheelSide::Left,
+            mount: Vec3::new(-0.82, -0.20, -1.24),
+            radius: 0.36,
+            width: 0.24,
+            inertia: 1.02,
+            steer: 1.0,
+            drive: 0.0,
+            brake: 1.0,
+            handbrake: 0.0,
+            suspension: base_suspension,
+            tire: front_tire,
+        },
         // Front-right (steered, not driven)
-        WheelDef { axle: 0, side: WheelSide::Right, mount: Vec3::new( 0.82, -0.20, -1.24), radius: 0.36, width: 0.24, inertia: 1.02, steer: 1.0, drive: 0.0, brake: 1.0, handbrake: 0.0, suspension: base_suspension, tire: front_tire },
+        WheelDef {
+            axle: 0,
+            side: WheelSide::Right,
+            mount: Vec3::new(0.82, -0.20, -1.24),
+            radius: 0.36,
+            width: 0.24,
+            inertia: 1.02,
+            steer: 1.0,
+            drive: 0.0,
+            brake: 1.0,
+            handbrake: 0.0,
+            suspension: base_suspension,
+            tire: front_tire,
+        },
         // Rear-left   (driven, Magic Formula, handbrake)
-        WheelDef { axle: 1, side: WheelSide::Left,  mount: Vec3::new(-0.82, -0.20,  1.20), radius: 0.37, width: 0.26, inertia: 0.94, steer: 0.0, drive: 1.0, brake: 1.0, handbrake: 1.0, suspension: SuspensionConfig { spring_strength_n_per_m: 30_000.0, ..base_suspension }, tire: rear_tire },
+        WheelDef {
+            axle: 1,
+            side: WheelSide::Left,
+            mount: Vec3::new(-0.82, -0.20, 1.20),
+            radius: 0.37,
+            width: 0.26,
+            inertia: 0.94,
+            steer: 0.0,
+            drive: 1.0,
+            brake: 1.0,
+            handbrake: 1.0,
+            suspension: SuspensionConfig {
+                spring_strength_n_per_m: 30_000.0,
+                ..base_suspension
+            },
+            tire: rear_tire,
+        },
         // Rear-right  (driven, Magic Formula, handbrake)
-        WheelDef { axle: 1, side: WheelSide::Right, mount: Vec3::new( 0.82, -0.20,  1.20), radius: 0.37, width: 0.26, inertia: 0.94, steer: 0.0, drive: 1.0, brake: 1.0, handbrake: 1.0, suspension: SuspensionConfig { spring_strength_n_per_m: 30_000.0, ..base_suspension }, tire: rear_tire },
+        WheelDef {
+            axle: 1,
+            side: WheelSide::Right,
+            mount: Vec3::new(0.82, -0.20, 1.20),
+            radius: 0.37,
+            width: 0.26,
+            inertia: 0.94,
+            steer: 0.0,
+            drive: 1.0,
+            brake: 1.0,
+            handbrake: 1.0,
+            suspension: SuspensionConfig {
+                spring_strength_n_per_m: 30_000.0,
+                ..base_suspension
+            },
+            tire: rear_tire,
+        },
     ];
 
     let wheel_color = Color::srgb(0.08, 0.08, 0.09);

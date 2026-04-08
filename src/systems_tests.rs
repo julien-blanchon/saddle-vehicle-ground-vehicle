@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use avian3d::prelude::ColliderOf;
+use avian3d::prelude::{ColliderOf, TransformInterpolation};
 use bevy::{
     ecs::schedule::ScheduleLabel,
     ecs::system::{RunSystemOnce, SystemState},
@@ -278,6 +278,59 @@ fn wheel_state_and_visuals_update_after_fixed_ticks() {
     assert!((suspension_length_m - 0.38).abs() < 0.001);
     assert_eq!(grounded_wheels, 0);
     assert!(wheel_visual.distance(expected_visual) < 0.001);
+}
+
+#[test]
+fn ground_vehicle_inserts_transform_interpolation_by_default() {
+    let mut app = App::new();
+    let entity = app
+        .world_mut()
+        .spawn((Name::new("Interpolated Chassis"), GroundVehicle::default()))
+        .id();
+
+    assert!(
+        app.world().get::<TransformInterpolation>(entity).is_some(),
+        "ground vehicles should interpolate render transforms between fixed ticks",
+    );
+}
+
+#[test]
+fn wheel_visuals_follow_chassis_transform_between_fixed_ticks() {
+    let mut app = test_app();
+    let (chassis, wheel, visual) = spawn_test_vehicle(&mut app);
+
+    for _ in 0..2 {
+        app.update();
+    }
+
+    let suspension_length_m = app
+        .world()
+        .get::<GroundVehicleWheelState>(wheel)
+        .expect("wheel runtime state should exist")
+        .suspension_length_m;
+
+    {
+        let mut transform = app
+            .world_mut()
+            .get_mut::<Transform>(chassis)
+            .expect("chassis transform should exist");
+        transform.translation = Vec3::new(6.0, 2.5, -4.0);
+    }
+
+    app.world_mut().run_schedule(PostUpdate);
+
+    let wheel_visual = app
+        .world()
+        .get::<Transform>(visual)
+        .expect("wheel visual transform should exist")
+        .translation;
+    let expected_visual =
+        Vec3::new(6.0, 2.5, -4.0) + Vec3::new(-0.82, -0.15 - suspension_length_m, -1.25);
+
+    assert!(
+        wheel_visual.distance(expected_visual) < 0.001,
+        "wheel visuals should follow the current chassis pose every render frame",
+    );
 }
 
 #[test]

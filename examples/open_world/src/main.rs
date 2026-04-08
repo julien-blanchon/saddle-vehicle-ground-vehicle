@@ -70,6 +70,7 @@ fn setup(
             RigidBody::Dynamic,
             Mass(80.0),
             Collider::cuboid(1.0, 1.0, 1.0),
+            TransformInterpolation,
             Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
             MeshMaterial3d(materials.add(StandardMaterial {
                 base_color: Color::srgb(0.65, 0.45, 0.22),
@@ -88,6 +89,7 @@ fn setup(
             RigidBody::Dynamic,
             Mass(15.0),
             Collider::cylinder(0.15, 0.9),
+            TransformInterpolation,
             Mesh3d(meshes.add(Cylinder::new(0.15, 0.9))),
             MeshMaterial3d(materials.add(StandardMaterial {
                 base_color: Color::srgb(0.85, 0.72, 0.10),

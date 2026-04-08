@@ -31,6 +31,7 @@ Most real issues show up quickly in:
 | Steering feels fine at low speed but dead at medium speed | speed reduction start/end or min factor too aggressive | `SteeringConfig` speed reduction fields |
 | Multi-axle truck jitters over bumps | too much spring or damping, or wheelbase bumps too sharp for the travel | per-wheel suspension force and contact state |
 | Wheel visuals do not match runtime contact | wrong `GroundVehicleWheelVisual` binding or base rotation | wheel visual entity transform vs wheel state |
+| High-speed motion shows ghosting or doubled meshes | missing fixed-step presentation interpolation or stale wheel-visual sync | chassis `TransformInterpolation`, wheel visual pose, and camera follow timing |
 
 ## Gizmos
 
@@ -95,6 +96,10 @@ The crate-local lab ships these scenarios:
 - `ground_vehicle_drift`
 - `ground_vehicle_skid_steer`
 - `ground_vehicle_multi_axle`
+- `ground_vehicle_kart_racing`
+- `ground_vehicle_sport_bike`
+- `ground_vehicle_sim_racing`
+- `ground_vehicle_open_world`
 
 Run them with:
 
@@ -105,6 +110,10 @@ cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_slope
 cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_drift
 cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_skid_steer
 cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_multi_axle
+cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_kart_racing
+cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_sport_bike
+cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_sim_racing
+cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_open_world
 ```
 
 Use them as a regression loop after tuning changes:
@@ -115,6 +124,10 @@ Use them as a regression loop after tuning changes:
 - drift: optional drift-helper posture and telemetry
 - skid steer: left/right drive-group turning without wheel steer angles
 - multi-axle: uneven support stability
+- kart racing: arcade grip, boost-lane speed, and planted turn-in
+- sport bike: always-on upright stabilization during fast steering inputs
+- sim racing: race-car gearing, aero grip, and low unwanted drift
+- open world: forgiving sedan behavior through prop impacts and obstacle lanes
 
 ## Deliberate Failure Cases Worth Reproducing
 

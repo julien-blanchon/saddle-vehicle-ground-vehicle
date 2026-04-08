@@ -207,6 +207,7 @@ Defaults below refer to each type's `Default` implementation unless noted otherw
 | `yaw_stability_torque_nm_per_radps` | `f32` | `2000.0` | High-speed yaw damping assist |
 | `yaw_stability_speed_threshold_mps` | `f32` | `6.0` | Minimum speed for yaw damping |
 | `airborne_upright_torque_nm_per_rad` | `f32` | `1200.0` | Upright assist while airborne |
+| `roll_upright_torque_nm_per_rad` | `f32` | `0.0` | Always-on upright correction for bikes or arcade vehicles that should resist tipping |
 
 ## `AerodynamicsConfig`
 

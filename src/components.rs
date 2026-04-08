@@ -27,6 +27,7 @@ pub enum WheelSide {
     LinearDamping = LinearDamping(0.02),
     LinearVelocity = LinearVelocity::ZERO,
     RigidBody = RigidBody::Dynamic,
+    TransformInterpolation,
     Transform,
     GlobalTransform,
     VehicleIntent

@@ -2,14 +2,11 @@ use crate::{GroundVehicleWheel, GroundVehicleWheelState, GroundVehicleWheelVisua
 use bevy::prelude::*;
 
 pub(crate) fn sync_wheel_visuals(
-    wheels: Query<
-        (
-            &GroundVehicleWheel,
-            &GroundVehicleWheelState,
-            &GroundVehicleWheelVisual,
-        ),
-        Changed<GroundVehicleWheelState>,
-    >,
+    wheels: Query<(
+        &GroundVehicleWheel,
+        &GroundVehicleWheelState,
+        &GroundVehicleWheelVisual,
+    )>,
     mut transforms: ParamSet<(Query<&Transform>, Query<&mut Transform>)>,
 ) {
     for (wheel, state, visual) in &wheels {

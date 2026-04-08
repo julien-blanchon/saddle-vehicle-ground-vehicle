@@ -36,7 +36,11 @@ fn setup(
                 &mut commands,
                 &mut meshes,
                 &mut materials,
-                &format!("Track Wall {} {}", if side < 0.0 { "L" } else { "R" }, segment),
+                &format!(
+                    "Track Wall {} {}",
+                    if side < 0.0 { "L" } else { "R" },
+                    segment
+                ),
                 Vec3::new(0.4, 0.8, 42.0),
                 Transform::from_xyz(side * 8.0, 0.4, z),
                 Color::srgb(0.55, 0.55, 0.58),

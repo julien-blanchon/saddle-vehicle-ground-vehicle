@@ -6,7 +6,6 @@
 //! R to reset.
 
 use bevy::prelude::*;
-use ground_vehicle_example_support as support;
 use ground_vehicle::{
     AerodynamicsConfig, DifferentialConfig, DifferentialMode, DirectionChangeConfig,
     DirectionChangePolicy, DriveModel, EngineConfig, GearModel, GroundVehicle,
@@ -14,6 +13,7 @@ use ground_vehicle::{
     StabilityConfig, SteeringConfig, SteeringMode, SuspensionConfig, TireGripConfig,
     TrackDriveConfig, VehicleIntent, WheelSide,
 };
+use ground_vehicle_example_support as support;
 use support::{
     ExampleDriver, ResetPose, ScriptedControlOverride, driver_actions, spawn_overlay,
     spawn_surface_box, spawn_world,
@@ -55,8 +55,8 @@ fn setup(
         angular_inertia_kgm2: Vec3::new(1_800.0, 2_600.0, 3_300.0),
         center_of_mass_offset: Vec3::new(0.0, -0.45, 0.0),
         steering: SteeringConfig {
-            mode: SteeringMode::Disabled,                        // no wheel-angle steering
-            max_angle_rad: 0.0,                                  // no wheel angle for skid steer
+            mode: SteeringMode::Disabled, // no wheel-angle steering
+            max_angle_rad: 0.0,           // no wheel angle for skid steer
             ackermann_ratio: 0.0,
             minimum_speed_factor: 1.0,
             ..default()
@@ -83,7 +83,7 @@ fn setup(
             }),
             drive_model: DriveModel::Track(TrackDriveConfig {
                 differential: DifferentialConfig {
-                    mode: DifferentialMode::Spool,               // locked for skid steer
+                    mode: DifferentialMode::Spool, // locked for skid steer
                     ..default()
                 },
                 turn_split: 0.92,
@@ -215,8 +215,8 @@ fn setup(
                     radius_m: 0.42,
                     width_m: 0.28,
                     rotational_inertia_kgm2: 1.45,
-                    steer_factor: 0.0,                           // no wheel angle
-                    drive_factor: 1.0,                           // all driven
+                    steer_factor: 0.0, // no wheel angle
+                    drive_factor: 1.0, // all driven
                     brake_factor: 1.0,
                     auxiliary_brake_factor: 0.6,
                     suspension,

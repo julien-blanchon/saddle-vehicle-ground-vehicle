@@ -5,12 +5,12 @@
 //! Space to brake, Shift for auxiliary brake, R to reset.
 
 use bevy::prelude::*;
-use ground_vehicle_example_support as support;
 use ground_vehicle::{
     AutomaticGearboxConfig, AxleDriveConfig, DifferentialConfig, DifferentialMode, DriveModel,
     EngineConfig, GearModel, GroundVehicle, GroundVehicleWheel, GroundVehicleWheelVisual,
     PowertrainConfig, SteeringConfig, SuspensionConfig, TireGripConfig, VehicleIntent, WheelSide,
 };
+use ground_vehicle_example_support as support;
 use support::{
     ExampleDriver, ResetPose, ScriptedControlOverride, driver_actions, spawn_overlay, spawn_world,
 };
@@ -34,11 +34,11 @@ fn setup(
     // Vehicle configuration — a simple compact hatchback
     // ---------------------------------------------------------------------------
     let vehicle = GroundVehicle {
-        mass_kg: 1_350.0,                                       // default
+        mass_kg: 1_350.0, // default
         angular_inertia_kgm2: Vec3::new(900.0, 1_100.0, 1_400.0),
         center_of_mass_offset: Vec3::new(0.0, -0.38, 0.0),
         steering: SteeringConfig {
-            max_angle_rad: 29.0_f32.to_radians(),               // 29 deg lock
+            max_angle_rad: 29.0_f32.to_radians(), // 29 deg lock
             ..default()
         },
         powertrain: PowertrainConfig {
@@ -154,20 +154,89 @@ fn setup(
     // ---------------------------------------------------------------------------
     // Wheels — front axle (axle 0): steered + driven
     // ---------------------------------------------------------------------------
-    let wheel_specs: [(u8, WheelSide, Vec3, f32, f32, f32, f32, f32, f32, f32, SuspensionConfig, TireGripConfig); 4] = [
+    let wheel_specs: [(
+        u8,
+        WheelSide,
+        Vec3,
+        f32,
+        f32,
+        f32,
+        f32,
+        f32,
+        f32,
+        f32,
+        SuspensionConfig,
+        TireGripConfig,
+    ); 4] = [
         //                                                                     steer drive brake handbrake
         // Front-left (steered + driven)
-        (0, WheelSide::Left,  Vec3::new(-0.82, -0.20, -1.24), 0.36, 0.24, 1.02, 1.0, 1.0, 1.0, 0.0, front_suspension, front_tire),
+        (
+            0,
+            WheelSide::Left,
+            Vec3::new(-0.82, -0.20, -1.24),
+            0.36,
+            0.24,
+            1.02,
+            1.0,
+            1.0,
+            1.0,
+            0.0,
+            front_suspension,
+            front_tire,
+        ),
         // Front-right (steered + driven)
-        (0, WheelSide::Right, Vec3::new( 0.82, -0.20, -1.24), 0.36, 0.24, 1.02, 1.0, 1.0, 1.0, 0.0, front_suspension, front_tire),
+        (
+            0,
+            WheelSide::Right,
+            Vec3::new(0.82, -0.20, -1.24),
+            0.36,
+            0.24,
+            1.02,
+            1.0,
+            1.0,
+            1.0,
+            0.0,
+            front_suspension,
+            front_tire,
+        ),
         // Rear-left (driven + handbrake)
-        (1, WheelSide::Left,  Vec3::new(-0.82, -0.20,  1.20), 0.37, 0.26, 1.10, 0.0, 1.0, 1.0, 1.0, rear_suspension, rear_tire),
+        (
+            1,
+            WheelSide::Left,
+            Vec3::new(-0.82, -0.20, 1.20),
+            0.37,
+            0.26,
+            1.10,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            rear_suspension,
+            rear_tire,
+        ),
         // Rear-right (driven + handbrake)
-        (1, WheelSide::Right, Vec3::new( 0.82, -0.20,  1.20), 0.37, 0.26, 1.10, 0.0, 1.0, 1.0, 1.0, rear_suspension, rear_tire),
+        (
+            1,
+            WheelSide::Right,
+            Vec3::new(0.82, -0.20, 1.20),
+            0.37,
+            0.26,
+            1.10,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            rear_suspension,
+            rear_tire,
+        ),
     ];
 
     let wheel_color = Color::srgb(0.12, 0.12, 0.13);
-    for (i, (axle, side, mount, radius, width, inertia, steer, drive, brake, handbrake, susp, tire)) in wheel_specs.into_iter().enumerate() {
+    for (
+        i,
+        (axle, side, mount, radius, width, inertia, steer, drive, brake, handbrake, susp, tire),
+    ) in wheel_specs.into_iter().enumerate()
+    {
         let visual_entity = commands
             .spawn((
                 Name::new(format!("Basic Hatchback Wheel Visual {}", i + 1)),

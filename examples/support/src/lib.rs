@@ -12,11 +12,11 @@ use ground_vehicle::{
     AerodynamicsConfig, AutomaticGearboxConfig, AxleDriveConfig, DifferentialConfig,
     DifferentialMode, DirectionChangeConfig, DirectionChangePolicy, DriveModel, EngineConfig,
     FixedGearConfig, GearModel, GroundVehicle, GroundVehicleDebugDraw, GroundVehicleDriftConfig,
-    GroundVehicleDriftPlugin, GroundVehicleDriftTelemetry, GroundVehiclePlugin,
-    GroundVehicleReset, GroundVehicleSurface, GroundVehicleSystems, GroundVehicleTelemetry,
-    GroundVehicleWheel, GroundVehicleWheelVisual, MagicFormulaConfig, PowertrainConfig, StabilityConfig,
-    SteeringConfig, SteeringMode, SuspensionConfig, TireGripConfig, TireModel,
-    TrackDriveConfig, VehicleIntent, WheelSide,
+    GroundVehicleDriftPlugin, GroundVehicleDriftTelemetry, GroundVehiclePlugin, GroundVehicleReset,
+    GroundVehicleSurface, GroundVehicleSystems, GroundVehicleTelemetry, GroundVehicleWheel,
+    GroundVehicleWheelVisual, MagicFormulaConfig, PowertrainConfig, StabilityConfig,
+    SteeringConfig, SteeringMode, SuspensionConfig, TireGripConfig, TireModel, TrackDriveConfig,
+    VehicleIntent, WheelSide,
 };
 use saddle_pane::prelude::*;
 
@@ -227,14 +227,10 @@ pub fn configure_example_app(app: &mut App, title: &'static str, debug_draw: boo
         .add_observer(clear_handbrake_on_cancel)
         .add_observer(clear_handbrake_on_complete)
         .add_observer(reset_vehicle)
-        .add_systems(
-            PostStartup,
-            attach_default_drift_helpers,
-        )
+        .add_systems(PostStartup, attach_default_drift_helpers)
         .add_systems(
             FixedUpdate,
-            apply_scripted_control_overrides
-                .before(GroundVehicleSystems::InputAdaptation),
+            apply_scripted_control_overrides.before(GroundVehicleSystems::InputAdaptation),
         )
         .add_systems(
             Update,
@@ -672,7 +668,10 @@ pub fn spawn_sport_bike_demo(
         transform,
     ));
     if pilot_controlled {
-        chassis.insert((driver_actions(), bevy_enhanced_input::prelude::ContextActivity::<ExampleDriver>::ACTIVE));
+        chassis.insert((
+            driver_actions(),
+            bevy_enhanced_input::prelude::ContextActivity::<ExampleDriver>::ACTIVE,
+        ));
     } else {
         chassis.insert(bevy_enhanced_input::prelude::ContextActivity::<ExampleDriver>::INACTIVE);
     }
@@ -719,28 +718,34 @@ pub fn spawn_sport_bike_demo(
                         wheel_spec.width_m.max(0.08),
                     ))),
                     MeshMaterial3d(wheel_material.clone()),
-                    Transform::from_translation(
-                        transform.transform_point(Vec3::new(0.0, wheel_spec.mount_point.y, wheel_spec.mount_point.z)),
-                    ),
+                    Transform::from_translation(transform.transform_point(Vec3::new(
+                        0.0,
+                        wheel_spec.mount_point.y,
+                        wheel_spec.mount_point.z,
+                    ))),
                 ))
                 .id();
 
-            commands.spawn((
-                Name::new(format!("{name} Wheel {}", index + 1)),
-                wheel_spec.into_wheel(chassis_entity),
-                GroundVehicleWheelVisual {
-                    visual_entity,
-                    visual_offset_local: Vec3::new(-wheel_spec.mount_point.x, 0.0, 0.0),
-                    base_rotation: Quat::from_rotation_z(std::f32::consts::FRAC_PI_2),
-                    ..default()
-                },
-            )).id()
+            commands
+                .spawn((
+                    Name::new(format!("{name} Wheel {}", index + 1)),
+                    wheel_spec.into_wheel(chassis_entity),
+                    GroundVehicleWheelVisual {
+                        visual_entity,
+                        visual_offset_local: Vec3::new(-wheel_spec.mount_point.x, 0.0, 0.0),
+                        base_rotation: Quat::from_rotation_z(std::f32::consts::FRAC_PI_2),
+                        ..default()
+                    },
+                ))
+                .id()
         } else {
             // Right-side wheel — physics only, no visual.
-            commands.spawn((
-                Name::new(format!("{name} Wheel {}", index + 1)),
-                wheel_spec.into_wheel(chassis_entity),
-            )).id()
+            commands
+                .spawn((
+                    Name::new(format!("{name} Wheel {}", index + 1)),
+                    wheel_spec.into_wheel(chassis_entity),
+                ))
+                .id()
         };
 
         let _ = wheel_entity;
@@ -844,32 +849,64 @@ fn sport_bike_wheels() -> Vec<WheelSpec> {
     // Narrow paired wheels — physics uses ±0.10 but visuals are centered.
     vec![
         WheelSpec {
-            axle: 0, side: WheelSide::Left, drive_side: WheelSide::Left,
+            axle: 0,
+            side: WheelSide::Left,
+            drive_side: WheelSide::Left,
             mount_point: Vec3::new(-0.10, -0.18, -0.72),
-            radius_m: 0.31, width_m: 0.12, rotational_inertia_kgm2: 0.35,
-            steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
-            suspension: front_suspension, tire: front_tire,
+            radius_m: 0.31,
+            width_m: 0.12,
+            rotational_inertia_kgm2: 0.35,
+            steer_factor: 1.0,
+            drive_factor: 0.0,
+            brake_factor: 1.0,
+            handbrake_factor: 0.0,
+            suspension: front_suspension,
+            tire: front_tire,
         },
         WheelSpec {
-            axle: 0, side: WheelSide::Right, drive_side: WheelSide::Right,
+            axle: 0,
+            side: WheelSide::Right,
+            drive_side: WheelSide::Right,
             mount_point: Vec3::new(0.10, -0.18, -0.72),
-            radius_m: 0.31, width_m: 0.12, rotational_inertia_kgm2: 0.35,
-            steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
-            suspension: front_suspension, tire: front_tire,
+            radius_m: 0.31,
+            width_m: 0.12,
+            rotational_inertia_kgm2: 0.35,
+            steer_factor: 1.0,
+            drive_factor: 0.0,
+            brake_factor: 1.0,
+            handbrake_factor: 0.0,
+            suspension: front_suspension,
+            tire: front_tire,
         },
         WheelSpec {
-            axle: 1, side: WheelSide::Left, drive_side: WheelSide::Left,
+            axle: 1,
+            side: WheelSide::Left,
+            drive_side: WheelSide::Left,
             mount_point: Vec3::new(-0.10, -0.18, 0.72),
-            radius_m: 0.32, width_m: 0.16, rotational_inertia_kgm2: 0.40,
-            steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
-            suspension: rear_suspension, tire: rear_tire,
+            radius_m: 0.32,
+            width_m: 0.16,
+            rotational_inertia_kgm2: 0.40,
+            steer_factor: 0.0,
+            drive_factor: 1.0,
+            brake_factor: 1.0,
+            handbrake_factor: 1.0,
+            suspension: rear_suspension,
+            tire: rear_tire,
         },
         WheelSpec {
-            axle: 1, side: WheelSide::Right, drive_side: WheelSide::Right,
+            axle: 1,
+            side: WheelSide::Right,
+            drive_side: WheelSide::Right,
             mount_point: Vec3::new(0.10, -0.18, 0.72),
-            radius_m: 0.32, width_m: 0.16, rotational_inertia_kgm2: 0.40,
-            steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
-            suspension: rear_suspension, tire: rear_tire,
+            radius_m: 0.32,
+            width_m: 0.16,
+            rotational_inertia_kgm2: 0.40,
+            steer_factor: 0.0,
+            drive_factor: 1.0,
+            brake_factor: 1.0,
+            handbrake_factor: 1.0,
+            suspension: rear_suspension,
+            tire: rear_tire,
         },
     ]
 }
@@ -1014,32 +1051,64 @@ fn sim_racer_wheels() -> Vec<WheelSpec> {
     };
     vec![
         WheelSpec {
-            axle: 0, side: WheelSide::Left, drive_side: WheelSide::Left,
+            axle: 0,
+            side: WheelSide::Left,
+            drive_side: WheelSide::Left,
             mount_point: Vec3::new(-0.84, -0.16, -1.32),
-            radius_m: 0.33, width_m: 0.26, rotational_inertia_kgm2: 1.15,
-            steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
-            suspension: front_suspension, tire: front_tire,
+            radius_m: 0.33,
+            width_m: 0.26,
+            rotational_inertia_kgm2: 1.15,
+            steer_factor: 1.0,
+            drive_factor: 0.0,
+            brake_factor: 1.0,
+            handbrake_factor: 0.0,
+            suspension: front_suspension,
+            tire: front_tire,
         },
         WheelSpec {
-            axle: 0, side: WheelSide::Right, drive_side: WheelSide::Right,
+            axle: 0,
+            side: WheelSide::Right,
+            drive_side: WheelSide::Right,
             mount_point: Vec3::new(0.84, -0.16, -1.32),
-            radius_m: 0.33, width_m: 0.26, rotational_inertia_kgm2: 1.15,
-            steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
-            suspension: front_suspension, tire: front_tire,
+            radius_m: 0.33,
+            width_m: 0.26,
+            rotational_inertia_kgm2: 1.15,
+            steer_factor: 1.0,
+            drive_factor: 0.0,
+            brake_factor: 1.0,
+            handbrake_factor: 0.0,
+            suspension: front_suspension,
+            tire: front_tire,
         },
         WheelSpec {
-            axle: 1, side: WheelSide::Left, drive_side: WheelSide::Left,
+            axle: 1,
+            side: WheelSide::Left,
+            drive_side: WheelSide::Left,
             mount_point: Vec3::new(-0.86, -0.16, 1.18),
-            radius_m: 0.34, width_m: 0.30, rotational_inertia_kgm2: 1.28,
-            steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
-            suspension: rear_suspension, tire: rear_tire,
+            radius_m: 0.34,
+            width_m: 0.30,
+            rotational_inertia_kgm2: 1.28,
+            steer_factor: 0.0,
+            drive_factor: 1.0,
+            brake_factor: 1.0,
+            handbrake_factor: 1.0,
+            suspension: rear_suspension,
+            tire: rear_tire,
         },
         WheelSpec {
-            axle: 1, side: WheelSide::Right, drive_side: WheelSide::Right,
+            axle: 1,
+            side: WheelSide::Right,
+            drive_side: WheelSide::Right,
             mount_point: Vec3::new(0.86, -0.16, 1.18),
-            radius_m: 0.34, width_m: 0.30, rotational_inertia_kgm2: 1.28,
-            steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
-            suspension: rear_suspension, tire: rear_tire,
+            radius_m: 0.34,
+            width_m: 0.30,
+            rotational_inertia_kgm2: 1.28,
+            steer_factor: 0.0,
+            drive_factor: 1.0,
+            brake_factor: 1.0,
+            handbrake_factor: 1.0,
+            suspension: rear_suspension,
+            tire: rear_tire,
         },
     ]
 }
@@ -1170,32 +1239,64 @@ fn kart_wheels() -> Vec<WheelSpec> {
     };
     vec![
         WheelSpec {
-            axle: 0, side: WheelSide::Left, drive_side: WheelSide::Left,
+            axle: 0,
+            side: WheelSide::Left,
+            drive_side: WheelSide::Left,
             mount_point: Vec3::new(-0.50, -0.12, -0.62),
-            radius_m: 0.16, width_m: 0.14, rotational_inertia_kgm2: 0.18,
-            steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
-            suspension: front_suspension, tire: front_tire,
+            radius_m: 0.16,
+            width_m: 0.14,
+            rotational_inertia_kgm2: 0.18,
+            steer_factor: 1.0,
+            drive_factor: 0.0,
+            brake_factor: 1.0,
+            handbrake_factor: 0.0,
+            suspension: front_suspension,
+            tire: front_tire,
         },
         WheelSpec {
-            axle: 0, side: WheelSide::Right, drive_side: WheelSide::Right,
+            axle: 0,
+            side: WheelSide::Right,
+            drive_side: WheelSide::Right,
             mount_point: Vec3::new(0.50, -0.12, -0.62),
-            radius_m: 0.16, width_m: 0.14, rotational_inertia_kgm2: 0.18,
-            steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
-            suspension: front_suspension, tire: front_tire,
+            radius_m: 0.16,
+            width_m: 0.14,
+            rotational_inertia_kgm2: 0.18,
+            steer_factor: 1.0,
+            drive_factor: 0.0,
+            brake_factor: 1.0,
+            handbrake_factor: 0.0,
+            suspension: front_suspension,
+            tire: front_tire,
         },
         WheelSpec {
-            axle: 1, side: WheelSide::Left, drive_side: WheelSide::Left,
+            axle: 1,
+            side: WheelSide::Left,
+            drive_side: WheelSide::Left,
             mount_point: Vec3::new(-0.52, -0.12, 0.62),
-            radius_m: 0.18, width_m: 0.18, rotational_inertia_kgm2: 0.22,
-            steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
-            suspension: rear_suspension, tire: rear_tire,
+            radius_m: 0.18,
+            width_m: 0.18,
+            rotational_inertia_kgm2: 0.22,
+            steer_factor: 0.0,
+            drive_factor: 1.0,
+            brake_factor: 1.0,
+            handbrake_factor: 1.0,
+            suspension: rear_suspension,
+            tire: rear_tire,
         },
         WheelSpec {
-            axle: 1, side: WheelSide::Right, drive_side: WheelSide::Right,
+            axle: 1,
+            side: WheelSide::Right,
+            drive_side: WheelSide::Right,
             mount_point: Vec3::new(0.52, -0.12, 0.62),
-            radius_m: 0.18, width_m: 0.18, rotational_inertia_kgm2: 0.22,
-            steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
-            suspension: rear_suspension, tire: rear_tire,
+            radius_m: 0.18,
+            width_m: 0.18,
+            rotational_inertia_kgm2: 0.22,
+            steer_factor: 0.0,
+            drive_factor: 1.0,
+            brake_factor: 1.0,
+            handbrake_factor: 1.0,
+            suspension: rear_suspension,
+            tire: rear_tire,
         },
     ]
 }
@@ -1321,32 +1422,64 @@ fn open_world_sedan_wheels() -> Vec<WheelSpec> {
     };
     vec![
         WheelSpec {
-            axle: 0, side: WheelSide::Left, drive_side: WheelSide::Left,
+            axle: 0,
+            side: WheelSide::Left,
+            drive_side: WheelSide::Left,
             mount_point: Vec3::new(-0.86, -0.22, -1.35),
-            radius_m: 0.36, width_m: 0.24, rotational_inertia_kgm2: 1.15,
-            steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
-            suspension: front_suspension, tire: front_tire,
+            radius_m: 0.36,
+            width_m: 0.24,
+            rotational_inertia_kgm2: 1.15,
+            steer_factor: 1.0,
+            drive_factor: 0.0,
+            brake_factor: 1.0,
+            handbrake_factor: 0.0,
+            suspension: front_suspension,
+            tire: front_tire,
         },
         WheelSpec {
-            axle: 0, side: WheelSide::Right, drive_side: WheelSide::Right,
+            axle: 0,
+            side: WheelSide::Right,
+            drive_side: WheelSide::Right,
             mount_point: Vec3::new(0.86, -0.22, -1.35),
-            radius_m: 0.36, width_m: 0.24, rotational_inertia_kgm2: 1.15,
-            steer_factor: 1.0, drive_factor: 0.0, brake_factor: 1.0, handbrake_factor: 0.0,
-            suspension: front_suspension, tire: front_tire,
+            radius_m: 0.36,
+            width_m: 0.24,
+            rotational_inertia_kgm2: 1.15,
+            steer_factor: 1.0,
+            drive_factor: 0.0,
+            brake_factor: 1.0,
+            handbrake_factor: 0.0,
+            suspension: front_suspension,
+            tire: front_tire,
         },
         WheelSpec {
-            axle: 1, side: WheelSide::Left, drive_side: WheelSide::Left,
+            axle: 1,
+            side: WheelSide::Left,
+            drive_side: WheelSide::Left,
             mount_point: Vec3::new(-0.86, -0.22, 1.30),
-            radius_m: 0.37, width_m: 0.26, rotational_inertia_kgm2: 1.20,
-            steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
-            suspension: rear_suspension, tire: rear_tire,
+            radius_m: 0.37,
+            width_m: 0.26,
+            rotational_inertia_kgm2: 1.20,
+            steer_factor: 0.0,
+            drive_factor: 1.0,
+            brake_factor: 1.0,
+            handbrake_factor: 1.0,
+            suspension: rear_suspension,
+            tire: rear_tire,
         },
         WheelSpec {
-            axle: 1, side: WheelSide::Right, drive_side: WheelSide::Right,
+            axle: 1,
+            side: WheelSide::Right,
+            drive_side: WheelSide::Right,
             mount_point: Vec3::new(0.86, -0.22, 1.30),
-            radius_m: 0.37, width_m: 0.26, rotational_inertia_kgm2: 1.20,
-            steer_factor: 0.0, drive_factor: 1.0, brake_factor: 1.0, handbrake_factor: 1.0,
-            suspension: rear_suspension, tire: rear_tire,
+            radius_m: 0.37,
+            width_m: 0.26,
+            rotational_inertia_kgm2: 1.20,
+            steer_factor: 0.0,
+            drive_factor: 1.0,
+            brake_factor: 1.0,
+            handbrake_factor: 1.0,
+            suspension: rear_suspension,
+            tire: rear_tire,
         },
     ]
 }
@@ -2068,7 +2201,10 @@ fn sync_pane_to_runtime(
     vehicle.powertrain.engine.peak_torque_nm = pane.peak_torque_nm;
     if let GearModel::Automatic(ref mut gearbox) = vehicle.powertrain.gear_model {
         gearbox.shift_up_rpm = pane.shift_up_rpm.max(100.0);
-        gearbox.shift_down_rpm = pane.shift_down_rpm.min(pane.shift_up_rpm - 100.0).max(100.0);
+        gearbox.shift_down_rpm = pane
+            .shift_down_rpm
+            .min(pane.shift_up_rpm - 100.0)
+            .max(100.0);
     }
 
     for mut wheel in &mut wheels {

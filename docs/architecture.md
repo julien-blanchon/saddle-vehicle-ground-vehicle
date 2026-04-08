@@ -34,6 +34,7 @@ The chassis is the rigid-body root:
 - `VehicleIntent`
 - `GroundVehicleTelemetry`
 - Avian rigid-body components
+- Avian `TransformInterpolation` for smooth presentation between fixed ticks
 - chassis collider and authored transform
 
 Optional helper layers attach additional components such as `GroundVehicleDriftConfig` and `GroundVehicleDriftTelemetry`.
@@ -51,6 +52,7 @@ Wheels do not need to be rigid bodies. They act as suspension probes plus cached
 ### Visual wheel entities
 
 Visible wheel meshes are separate entities referenced by `GroundVehicleWheelVisual`. The crate writes their transforms in `PostUpdate` after simulation has settled. Visual sync never mutates physics state.
+Visual sync runs every render frame so separate wheel meshes continue to track the interpolated chassis pose between fixed physics ticks.
 
 ## Force Flow
 

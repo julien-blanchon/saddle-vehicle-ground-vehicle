@@ -94,6 +94,7 @@ For examples and crate-local labs, `GroundVehiclePlugin::default()` is the alway
 - Chassis right: local `+X`
 - Chassis up: local `+Y`
 - Wheel `mount_point`: chassis-local position of the suspension origin
+- Chassis entities use Avian `TransformInterpolation` by default so fixed-step motion renders smoothly between physics ticks
 - Wheel visuals are separate from the physics chassis and are written in `PostUpdate`
 
 ## Public API
@@ -197,6 +198,12 @@ All example apps include live `saddle-pane` tuning and on-screen controls. The e
 | `kart_racing` | Playful Mario Kart-style kart with boost pads, ramps, oil patches, and dirt shortcuts | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_kart_racing` |
 | `open_world` | GTA-like heavy sedan with dynamic crates, bollards, ramps, and strong self-righting | `cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_open_world` |
 
+Most reusable vehicle presets are verified through the shared lab below. The checkpoint-focused `driving_demo` keeps its own example-local E2E flow because its lap progression and HUD logic only exist in that example package:
+
+```bash
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_driving_demo --features e2e -- driving_demo_checkpoint_lap
+```
+
 ## Crate-Local Lab
 
 The richer standalone verification app lives under `examples/lab`:
@@ -207,7 +214,7 @@ cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab
 
 ### E2E Scenarios
 
-The lab includes 7 automated E2E scenarios powered by `saddle-bevy-e2e`. Each scenario resets a specific vehicle, applies scripted inputs, captures screenshots, and runs soft assertions. Run them with:
+The lab includes 11 automated E2E scenarios powered by `saddle-bevy-e2e`. Each scenario resets a specific vehicle, applies scripted inputs, captures screenshots, and runs soft assertions. Run them with:
 
 ```bash
 cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e2e -- <scenario_name>
@@ -222,8 +229,12 @@ cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_lab --features e
 | `ground_vehicle_drift` | Drift coupe | Enters a drift with throttle + turn + aux brake, shows lateral movement, stays grounded |
 | `ground_vehicle_skid_steer` | Skid vehicle | Yaws via left/right drive split (not wheel steer), keeps all wheels on ground |
 | `ground_vehicle_multi_axle` | Cargo truck | Stays upright and grounded while crossing a bump course, no drift state |
+| `ground_vehicle_kart_racing` | Kart | Uses the actual kart setup through its arcade lane and verifies planted, high-speed handling |
+| `ground_vehicle_sport_bike` | Sport bike | Uses the actual bike-style setup and verifies upright stability during a fast turn |
+| `ground_vehicle_sim_racing` | Sim racer | Uses the actual race-car setup and verifies clean upshifts plus low drift ratio |
+| `ground_vehicle_open_world` | Open-world sedan | Uses the forgiving sedan against dynamic props and verifies post-impact stability |
 
-Each scenario writes its output to `examples/e2e_output/<scenario_name>/`:
+Each scenario writes its output to `e2e_output/<scenario_name>/` relative to the directory you launch from:
 - `log.txt` — timestamped action log with pass/fail results
 - `*.png` — screenshots at key moments (start, mid, end states)
 

@@ -15,6 +15,10 @@ Keys:
 - `3`: cargo truck
 - `4`: skid vehicle
 - `5`: slope rover
+- `6`: sport bike
+- `7`: sim racer
+- `8`: kart
+- `9`: open-world sedan
 - `W/S`: drive and reverse intent
 - `A/D`: steering or turn demand
 - `Space`: brake
@@ -30,6 +34,16 @@ cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_slope
 cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_drift
 cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_skid_steer
 cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_multi_axle
+cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_kart_racing
+cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_sport_bike
+cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_sim_racing
+cargo run -p ground_vehicle_lab --features e2e -- ground_vehicle_open_world
+```
+
+The shared lab covers the reusable vehicle presets. The separate `ground_vehicle_example_driving_demo` example has its own dedicated E2E scenario because its checkpoint progression and HUD logic are example-specific:
+
+```bash
+cargo run --manifest-path examples/Cargo.toml -p ground_vehicle_example_driving_demo --features e2e -- driving_demo_checkpoint_lap
 ```
 
 ## BRP

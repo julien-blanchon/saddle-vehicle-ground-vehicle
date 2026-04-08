@@ -6,13 +6,13 @@
 //! Shift for auxiliary brake, R to reset.
 
 use bevy::prelude::*;
-use ground_vehicle_example_support as support;
 use ground_vehicle::{
     AerodynamicsConfig, AutomaticGearboxConfig, AxleDriveConfig, DifferentialConfig,
     DifferentialMode, DriveModel, EngineConfig, GearModel, GroundVehicle, GroundVehicleWheel,
-    GroundVehicleWheelVisual, PowertrainConfig, StabilityConfig, SteeringConfig,
-    SuspensionConfig, TireGripConfig, VehicleIntent, WheelSide,
+    GroundVehicleWheelVisual, PowertrainConfig, StabilityConfig, SteeringConfig, SuspensionConfig,
+    TireGripConfig, VehicleIntent, WheelSide,
 };
+use ground_vehicle_example_support as support;
 use support::{
     ExampleDriver, ResetPose, ScriptedControlOverride, driver_actions, spawn_overlay, spawn_ramp,
     spawn_world,
@@ -62,7 +62,7 @@ fn setup(
     let vehicle = GroundVehicle {
         mass_kg: 980.0,
         angular_inertia_kgm2: Vec3::new(700.0, 840.0, 980.0),
-        center_of_mass_offset: Vec3::new(0.0, -0.42, 0.0),     // low CG for slope stability
+        center_of_mass_offset: Vec3::new(0.0, -0.42, 0.0), // low CG for slope stability
         steering: SteeringConfig {
             max_angle_rad: 24.0_f32.to_radians(),
             steer_rate_rad_per_sec: 2.0,
@@ -76,13 +76,13 @@ fn setup(
                 peak_torque_nm: 185.0,
                 peak_torque_rpm: 2_600.0,
                 redline_rpm: 4_500.0,
-                idle_torque_fraction: 0.78,                      // high idle for crawling
+                idle_torque_fraction: 0.78, // high idle for crawling
                 redline_torque_fraction: 0.72,
                 engine_brake_torque_nm: 65.0,
                 ..default()
             },
             gear_model: GearModel::Automatic(AutomaticGearboxConfig {
-                final_drive_ratio: 6.10,                         // low gearing for torque
+                final_drive_ratio: 6.10, // low gearing for torque
                 forward_gears: [3.85, 2.35, 1.55, 1.12, 0.92, 0.78],
                 forward_gear_count: 4,
                 reverse_ratio: 3.45,
@@ -93,7 +93,7 @@ fn setup(
             }),
             drive_model: DriveModel::Axle(AxleDriveConfig {
                 differential: DifferentialConfig {
-                    mode: DifferentialMode::LimitedSlip,             // LSD for traction on slopes
+                    mode: DifferentialMode::LimitedSlip, // LSD for traction on slopes
                     limited_slip_load_bias: 0.62,
                 },
                 ..default()
@@ -104,24 +104,23 @@ fn setup(
         },
         stability: StabilityConfig {
             anti_roll_force_n_per_ratio: 4_400.0,
-            park_hold_force_newtons: 12_000.0,                   // strong hill-hold
+            park_hold_force_newtons: 12_000.0, // strong hill-hold
             park_hold_speed_threshold_mps: 1.6,
-            low_speed_traction_boost: 1.6,                       // extra grip at crawl speed
+            low_speed_traction_boost: 1.6, // extra grip at crawl speed
             low_speed_traction_speed_threshold_mps: 2.4,
             yaw_stability_torque_nm_per_radps: 1_300.0,
             ..default()
         },
         aerodynamics: AerodynamicsConfig {
             drag_force_per_speed_sq: 0.8,
-            downforce_per_speed_sq: 0.0,                         // off-road, no aero downforce
+            downforce_per_speed_sq: 0.0, // off-road, no aero downforce
         },
     };
 
     let chassis_size = Vec3::new(1.75, 0.75, 3.25);
     // Spawn on the main ramp (centered at y=1.4, tilted -0.26 rad around X).
     // The ramp surface rises toward -Z, so z=-2.0 puts us partway up the slope.
-    let transform = Transform::from_xyz(0.0, 3.6, -2.0)
-        .with_rotation(Quat::from_rotation_x(-0.26));
+    let transform = Transform::from_xyz(0.0, 3.6, -2.0).with_rotation(Quat::from_rotation_x(-0.26));
 
     // ---------------------------------------------------------------------------
     // Spawn chassis
@@ -182,9 +181,9 @@ fn setup(
     // ---------------------------------------------------------------------------
     let suspension = SuspensionConfig {
         rest_length_m: 0.40,
-        max_compression_m: 0.20,                                 // long travel
-        max_droop_m: 0.18,                                       // long droop
-        spring_strength_n_per_m: 24_000.0,                       // softer for compliance
+        max_compression_m: 0.20,           // long travel
+        max_droop_m: 0.18,                 // long droop
+        spring_strength_n_per_m: 24_000.0, // softer for compliance
         damper_strength_n_per_mps: 3_000.0,
         bump_stop_strength_n_per_m: 16_000.0,
     };
@@ -193,9 +192,9 @@ fn setup(
     // Off-road tires — high longitudinal grip, low-speed lateral boost
     // ---------------------------------------------------------------------------
     let tire = TireGripConfig {
-        longitudinal_grip: 1.72,                                 // aggressive tread
+        longitudinal_grip: 1.72, // aggressive tread
         lateral_grip: 1.08,
-        low_speed_lateral_multiplier: 1.48,                      // extra grip at crawl speed
+        low_speed_lateral_multiplier: 1.48, // extra grip at crawl speed
         nominal_load_newtons: 2_800.0,
         ..default()
     };
@@ -213,7 +212,9 @@ fn setup(
     ];
 
     let wheel_color = Color::srgb(0.10, 0.10, 0.12);
-    for (i, &(axle, side, mount, radius, width, inertia, steer, drive, brake, handbrake)) in wheel_specs.iter().enumerate() {
+    for (i, &(axle, side, mount, radius, width, inertia, steer, drive, brake, handbrake)) in
+        wheel_specs.iter().enumerate()
+    {
         let visual_entity = commands
             .spawn((
                 Name::new(format!("Slope Rover Wheel Visual {}", i + 1)),
