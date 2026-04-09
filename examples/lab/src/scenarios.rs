@@ -19,6 +19,12 @@ struct OpenWorldCrateSnapshot {
     position: Vec3,
 }
 
+fn reset_active_vehicle(active: ActiveVehicle, transform: Transform, velocity: Vec3) -> Action {
+    Action::Custom(Box::new(move |world: &mut World| {
+        configure_active_vehicle(world, active, transform, velocity);
+    }))
+}
+
 pub fn scenario_by_name(name: &str) -> Option<Scenario> {
     match name {
         "ground_vehicle_smoke" => Some(build_smoke()),
@@ -55,11 +61,11 @@ pub fn list_scenarios() -> Vec<&'static str> {
 fn build_smoke() -> Scenario {
     Scenario::builder("ground_vehicle_smoke")
         .description("Verify the compact car settles, takes throttle, and builds forward speed.")
-        .then(Action::Custom(Box::new(|world: &mut World| {
-            set_active_vehicle(world, ActiveVehicle::Compact);
-            let car = world.resource::<LabState>().compact;
-            reset_vehicle(world, car, Transform::from_xyz(0.0, 0.82, 22.0), Vec3::ZERO);
-        })))
+        .then(reset_active_vehicle(
+            ActiveVehicle::Compact,
+            Transform::from_xyz(0.0, 0.82, 22.0),
+            Vec3::ZERO,
+        ))
         .then(Action::WaitFrames(10))
         .then(Action::WaitUntil {
             label: "compact car settled on ground".into(),
@@ -162,11 +168,11 @@ fn build_braking() -> Scenario {
         .description(
             "Verify the compact car can brake to a stop after building speed under throttle.",
         )
-        .then(Action::Custom(Box::new(|world: &mut World| {
-            set_active_vehicle(world, ActiveVehicle::Compact);
-            let car = world.resource::<LabState>().compact;
-            reset_vehicle(world, car, Transform::from_xyz(0.0, 0.82, 46.0), Vec3::ZERO);
-        })))
+        .then(reset_active_vehicle(
+            ActiveVehicle::Compact,
+            Transform::from_xyz(0.0, 0.82, 46.0),
+            Vec3::ZERO,
+        ))
         .then(Action::WaitFrames(10))
         .then(Action::WaitUntil {
             label: "compact car settled for braking".into(),
@@ -287,11 +293,11 @@ fn build_drivetrain() -> Scenario {
         .description(
             "Verify the compact car upshifts under load and reports engine RPM through telemetry.",
         )
-        .then(Action::Custom(Box::new(|world: &mut World| {
-            set_active_vehicle(world, ActiveVehicle::Compact);
-            let car = world.resource::<LabState>().compact;
-            reset_vehicle(world, car, Transform::from_xyz(0.0, 0.82, 54.0), Vec3::ZERO);
-        })))
+        .then(reset_active_vehicle(
+            ActiveVehicle::Compact,
+            Transform::from_xyz(0.0, 0.82, 54.0),
+            Vec3::ZERO,
+        ))
         .then(Action::WaitFrames(10))
         .then(Action::WaitUntil {
             label: "compact car settled for drivetrain".into(),
@@ -365,15 +371,13 @@ fn build_drivetrain() -> Scenario {
 fn build_slope() -> Scenario {
     Scenario::builder("ground_vehicle_slope")
         .description("Verify the slope rover holds position on the ramp under brake without jittery sliding.")
+        .then(reset_active_vehicle(
+            ActiveVehicle::Rover,
+            Transform::from_xyz(42.0, 4.7, 46.0).with_rotation(Quat::from_rotation_x(-0.28)),
+            Vec3::ZERO,
+        ))
         .then(Action::Custom(Box::new(|world: &mut World| {
-            set_active_vehicle(world, ActiveVehicle::Rover);
             let rover = world.resource::<LabState>().rover;
-            reset_vehicle(
-                world,
-                rover,
-                Transform::from_xyz(42.0, 4.7, 46.0).with_rotation(Quat::from_rotation_x(-0.28)),
-                Vec3::ZERO,
-            );
             set_control(
                 world,
                 rover,
@@ -445,16 +449,13 @@ fn build_drift() -> Scenario {
         .description(
             "Verify the drift coupe enters a drift under drive, turn, and auxiliary brake.",
         )
+        .then(reset_active_vehicle(
+            ActiveVehicle::Drift,
+            Transform::from_xyz(42.0, 1.18, 18.0),
+            Vec3::new(0.0, 0.0, -6.0),
+        ))
         .then(Action::Custom(Box::new(|world: &mut World| {
-            set_active_vehicle(world, ActiveVehicle::Drift);
             let drift = world.resource::<LabState>().drift;
-            // Moderate initial velocity — the physics sim limits effective speed
-            reset_vehicle(
-                world,
-                drift,
-                Transform::from_xyz(42.0, 1.18, 18.0),
-                Vec3::new(0.0, 0.0, -6.0),
-            );
             set_control(
                 world,
                 drift,
@@ -528,15 +529,13 @@ fn build_drift() -> Scenario {
 fn build_skid_steer() -> Scenario {
     Scenario::builder("ground_vehicle_skid_steer")
         .description("Verify the skid vehicle turns through left/right drive split instead of wheel steer angles.")
+        .then(reset_active_vehicle(
+            ActiveVehicle::Skid,
+            Transform::from_xyz(0.0, 1.35, -28.0),
+            Vec3::ZERO,
+        ))
         .then(Action::Custom(Box::new(|world: &mut World| {
-            set_active_vehicle(world, ActiveVehicle::Skid);
             let skid = world.resource::<LabState>().skid;
-            reset_vehicle(
-                world,
-                skid,
-                Transform::from_xyz(0.0, 1.35, -28.0),
-                Vec3::ZERO,
-            );
             set_control(
                 world,
                 skid,
@@ -597,15 +596,13 @@ fn build_skid_steer() -> Scenario {
 fn build_multi_axle() -> Scenario {
     Scenario::builder("ground_vehicle_multi_axle")
         .description("Verify the cargo truck remains stable while crossing the bump course.")
+        .then(reset_active_vehicle(
+            ActiveVehicle::Truck,
+            Transform::from_xyz(-46.0, 1.7, 24.0),
+            Vec3::ZERO,
+        ))
         .then(Action::Custom(Box::new(|world: &mut World| {
-            set_active_vehicle(world, ActiveVehicle::Truck);
             let truck = world.resource::<LabState>().truck;
-            reset_vehicle(
-                world,
-                truck,
-                Transform::from_xyz(-46.0, 1.7, 24.0),
-                Vec3::ZERO,
-            );
             set_control(
                 world,
                 truck,
@@ -669,16 +666,11 @@ fn build_kart_racing() -> Scenario {
              into a sweeping turn toward the slippery patch, and verify the kart stays planted \
              and responsive.",
         )
-        .then(Action::Custom(Box::new(|world: &mut World| {
-            set_active_vehicle(world, ActiveVehicle::Kart);
-            let kart = world.resource::<LabState>().kart;
-            reset_vehicle(
-                world,
-                kart,
-                Transform::from_xyz(-82.0, 0.8, -18.0),
-                Vec3::ZERO,
-            );
-        })))
+        .then(reset_active_vehicle(
+            ActiveVehicle::Kart,
+            Transform::from_xyz(-82.0, 0.8, -18.0),
+            Vec3::ZERO,
+        ))
         .then(Action::WaitFrames(10))
         .then(Action::WaitUntil {
             label: "kart settled on ground".into(),
@@ -761,16 +753,11 @@ fn build_sport_bike() -> Scenario {
             "Use the actual sport-bike setup: accelerate through the slalom lane, hold a turn at \
              speed, and verify the bike-style configuration stays upright and composed.",
         )
-        .then(Action::Custom(Box::new(|world: &mut World| {
-            set_active_vehicle(world, ActiveVehicle::SportBike);
-            let bike = world.resource::<LabState>().sport_bike;
-            reset_vehicle(
-                world,
-                bike,
-                Transform::from_xyz(-82.0, 1.0, 58.0),
-                Vec3::ZERO,
-            );
-        })))
+        .then(reset_active_vehicle(
+            ActiveVehicle::SportBike,
+            Transform::from_xyz(-82.0, 1.0, 58.0),
+            Vec3::ZERO,
+        ))
         .then(Action::WaitFrames(10))
         .then(Action::WaitUntil {
             label: "sport bike settled on ground".into(),
@@ -852,11 +839,11 @@ fn build_sim_racing() -> Scenario {
             "Use the actual sim-racing setup: launch down the corridor under sustained throttle, \
              verify it upshifts cleanly, and confirm the high-grip race car stays composed.",
         )
-        .then(Action::Custom(Box::new(|world: &mut World| {
-            set_active_vehicle(world, ActiveVehicle::SimRacer);
-            let car = world.resource::<LabState>().sim_racer;
-            reset_vehicle(world, car, Transform::from_xyz(82.0, 1.0, 22.0), Vec3::ZERO);
-        })))
+        .then(reset_active_vehicle(
+            ActiveVehicle::SimRacer,
+            Transform::from_xyz(82.0, 1.0, 22.0),
+            Vec3::ZERO,
+        ))
         .then(Action::WaitFrames(10))
         .then(Action::WaitUntil {
             label: "sim racer settled on grid".into(),
@@ -934,16 +921,11 @@ fn build_open_world() -> Scenario {
             "Drive the open-world sedan through the obstacle lane: hit the loose crates, keep \
              building speed, and verify the forgiving sedan remains stable after contact.",
         )
-        .then(Action::Custom(Box::new(|world: &mut World| {
-            set_active_vehicle(world, ActiveVehicle::Sedan);
-            let sedan = world.resource::<LabState>().sedan;
-            reset_vehicle(
-                world,
-                sedan,
-                Transform::from_xyz(87.0, 1.2, -42.0),
-                Vec3::ZERO,
-            );
-        })))
+        .then(reset_active_vehicle(
+            ActiveVehicle::Sedan,
+            Transform::from_xyz(87.0, 1.2, -42.0),
+            Vec3::ZERO,
+        ))
         .then(Action::WaitFrames(10))
         .then(Action::WaitUntil {
             label: "sedan settled on the open-world lane".into(),
@@ -1042,7 +1024,26 @@ fn set_active_vehicle(world: &mut World, active: ActiveVehicle) {
             .insert(ContextActivity::<ExampleDriver>::INACTIVE);
     }
 
-    let entity = match active {
+    let entity = active_vehicle_entity(state, active);
+    world
+        .entity_mut(entity)
+        .insert(ContextActivity::<ExampleDriver>::ACTIVE);
+}
+
+fn configure_active_vehicle(
+    world: &mut World,
+    active: ActiveVehicle,
+    transform: Transform,
+    velocity: Vec3,
+) {
+    set_active_vehicle(world, active);
+    let state = *world.resource::<LabState>();
+    let entity = active_vehicle_entity(state, active);
+    reset_vehicle(world, entity, transform, velocity);
+}
+
+fn active_vehicle_entity(state: LabState, active: ActiveVehicle) -> Entity {
+    match active {
         ActiveVehicle::Compact => state.compact,
         ActiveVehicle::Drift => state.drift,
         ActiveVehicle::Truck => state.truck,
@@ -1052,10 +1053,7 @@ fn set_active_vehicle(world: &mut World, active: ActiveVehicle) {
         ActiveVehicle::SimRacer => state.sim_racer,
         ActiveVehicle::Kart => state.kart,
         ActiveVehicle::Sedan => state.sedan,
-    };
-    world
-        .entity_mut(entity)
-        .insert(ContextActivity::<ExampleDriver>::ACTIVE);
+    }
 }
 
 fn named_entity(world: &mut World, name: &str) -> Option<Entity> {
