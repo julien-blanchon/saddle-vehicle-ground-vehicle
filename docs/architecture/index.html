@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<script>
+			(() => {
+				document.documentElement.classList.add('js');
+				const storageKey = 'docs-theme';
+				const storedTheme = localStorage.getItem(storageKey);
+				const isDark =
+					storedTheme === 'dark' ||
+					(storedTheme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+				document.documentElement.classList.toggle('dark', isDark);
+				document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+			})();
+		</script>
+		<link href="../../_app/immutable/entry/start.BylNNWSA.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/DvkCOHBI.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/D6rU7RKI.js" rel="modulepreload">
+		<link href="../../_app/immutable/entry/app.DtKXVTpw.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/D2PL5qU_.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/DsnmJJEf.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/CGbRUU1n.js" rel="modulepreload">
+		<link href="../../_app/immutable/nodes/0.79e4xt2r.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/DT5XPxSy.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/CgdF3LBK.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/D3udy8KQ.js" rel="modulepreload">
+		<link href="../../_app/immutable/nodes/2.XrcFRpJY.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/CxAyHLx8.js" rel="modulepreload">
+		<link href="../../_app/immutable/nodes/5.BOp3_yHr.js" rel="modulepreload">
+		<link href="../../_app/immutable/chunks/O7QY0ZL7.js" rel="modulepreload">
+		<!--12qhfyh--><meta name="theme-color" content="#ffffff"/> <link rel="icon" type="image/svg+xml" href="../../favicon.svg"/> <meta name="description" content="Reusable ground vehicle controller for Bevy with suspension, steering, grip, and crate-local lab verification"/><!----><!--1bpnej--><!--[0--><meta name="description" content="Architecture documentation"/><!--]--><!----><title>Architecture - saddle-vehicle-ground-vehicle</title>
+		<link href="../../_app/immutable/assets/manifest.DAGDUwuc.css" rel="stylesheet">
+		<link href="../../_app/immutable/assets/0.Cu___w4E.css" rel="stylesheet">
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents"><!--[--><!--[0--><!--[--><!--[0--><!--[--><main class="relative h-dvh bg-background text-foreground"><div class="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-border bg-background px-4 py-1.5 lg:hidden"><a href="../../" class="inline-flex items-center gap-1 px-2 py-2 text-sm tracking-tight text-foreground"><span class="font-medium tracking-tight text-foreground">saddle-vehicle-ground-vehicle</span></a> <button class="-mr-2 inline-flex size-10 items-center justify-center gap-2 rounded-sm text-sm whitespace-nowrap text-foreground transition-colors duration-150 ease-out hover:bg-background-muted lg:hidden" aria-label="Toggle menu"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="20" height="20" aria-hidden="true"><!--[-1--><!--]--><path d="M4 6H28V8H4z"></path><path d="M4 24H28V26H4z"></path><path d="M4 12H28V14H4z"></path><path d="M4 18H28V20H4z"></path></svg><!----></button></div> <!--[-1--><!--]--><!----> <div class="flex h-full w-full min-w-0 lg:grid lg:grid-cols-[22rem_minmax(0,1fr)] lg:pr-4 xl:grid-cols-[22rem_minmax(0,56rem)_18rem] xl:justify-center"><div class="hidden lg:block"><aside class="flex h-dvh flex-col bg-background" aria-label="Documentation sidebar"><div class="flex flex-col gap-4 p-4"><a href="../../" class="flex items-center gap-2"><span class="text-xl font-medium tracking-tight text-foreground">saddle-vehicle-ground-vehicle</span></a> <!--[0--><button type="button" class="group inset-shadow relative flex h-9 w-full items-center gap-2 rounded-sm bg-background-inset px-3 py-1.5 text-sm font-medium text-foreground-muted/70 transition-[color] duration-150 ease-out hover:text-foreground-muted"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true" class="text-foreground-muted/70"><!--[-1--><!--]--><path d="M29,27.5859l-7.5521-7.5521a11.0177,11.0177,0,1,0-1.4141,1.4141L27.5859,29ZM4,13a9,9,0,1,1,9,9A9.01,9.01,0,0,1,4,13Z"></path></svg><!----> <span class="flex-1 text-left">Search...</span> <!--[0--><kbd class="card pointer-events-none relative hidden h-5 items-center gap-1 rounded-xs bg-background px-1.5 font-mono text-[10px] font-medium text-foreground-muted/70 select-none sm:flex">⌘ K</kbd><!--]--></button><!--]--><!----></div> <div class="relative flex flex-col overflow-hidden flex-1 svelte-1lcbi17"><div class="scrollbar-hide min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto p-4 svelte-1lcbi17" style="mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent);"><nav class="flex flex-col space-y-1" aria-label="Documentation pages"><h4 class="mb-2 ml-2 text-xs font-medium tracking-wide text-foreground-muted/70 uppercase">Docs</h4> <!--[--><!--[-1--><a href="../../" class="block rounded-sm px-3 py-1.5 text-sm tracking-normal transition-all duration-150 ease-out text-foreground-muted hover:bg-background-muted hover:text-foreground">Overview</a><!--]--><!--[0--><button class="flex w-full items-center justify-between rounded-sm px-3 py-1.5 text-sm font-medium tracking-normal transition-all duration-150 ease-out hover:bg-background-muted hover:text-foreground text-foreground-muted"><span>Documentation</span> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true" class="size-4 transition-transform duration-150"><!--[-1--><!--]--><path d="M22 16 12 26 10.6 24.6 19.2 16 10.6 7.4 12 6z"></path></svg><!----></button> <!--[-1--><!--]--><!--]--><!--[0--><button class="flex w-full items-center justify-between rounded-sm px-3 py-1.5 text-sm font-medium tracking-normal transition-all duration-150 ease-out hover:bg-background-muted hover:text-foreground text-foreground-muted"><span>Demos</span> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true" class="size-4 transition-transform duration-150"><!--[-1--><!--]--><path d="M22 16 12 26 10.6 24.6 19.2 16 10.6 7.4 12 6z"></path></svg><!----></button> <!--[-1--><!--]--><!--]--><!--]--></nav><!----></div></div><!----> <div class="flex items-center gap-1 p-4"><!--[0--><button type="button" class="group transition-scale inset-shadow relative inline-flex size-7 items-center justify-center rounded-sm bg-background-inset text-foreground duration-150 ease-out active:scale-[0.95]" aria-label="Switch to dark mode"><span class="sr-only">Switch to dark mode</span> <span class="transition-transform duration-150 ease-out"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true"><!--[-1--><!--]--><path d="M16,12a4,4,0,1,1-4,4,4.0045,4.0045,0,0,1,4-4m0-2a6,6,0,1,0,6,6,6,6,0,0,0-6-6Z" transform="translate(0 .005)"></path><path d="M6.854 5.375H8.854V10.333H6.854z" transform="rotate(-45 7.86 7.856)"></path><path d="M2 15.005H7V17.005000000000003H2z"></path><path d="M5.375 23.147H10.333V25.147H5.375z" transform="rotate(-45 7.86 24.149)"></path><path d="M15 25.005H17V30.005H15z"></path><path d="M23.147 21.668H25.147V26.625999999999998H23.147z" transform="rotate(-45 24.152 24.149)"></path><path d="M25 15.005H30V17.005000000000003H25z"></path><path d="M21.668 6.854H26.625999999999998V8.854H21.668z" transform="rotate(-45 24.152 7.856)"></path><path d="M15 2.005H17V7.005H15z"></path></svg><!----></span> <span class="absolute transition-transform duration-150 ease-out scale-0 blur-[2px]"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true"><!--[-1--><!--]--><path d="M13.5025,5.4136A15.0755,15.0755,0,0,0,25.096,23.6082a11.1134,11.1134,0,0,1-7.9749,3.3893c-.1385,0-.2782.0051-.4178,0A11.0944,11.0944,0,0,1,13.5025,5.4136M14.98,3a1.0024,1.0024,0,0,0-.1746.0156A13.0959,13.0959,0,0,0,16.63,28.9973c.1641.006.3282,0,.4909,0a13.0724,13.0724,0,0,0,10.702-5.5556,1.0094,1.0094,0,0,0-.7833-1.5644A13.08,13.08,0,0,1,15.8892,4.38,1.0149,1.0149,0,0,0,14.98,3Z"></path></svg><!----></span></button><!--]--> <!--[0--><a class="group transition-scale inset-shadow relative inline-flex size-7 cursor-pointer items-center justify-center rounded-sm bg-background-inset text-foreground duration-150 ease-out active:scale-[0.95]" href="https://github.com/julien-blanchon/saddle-vehicle-ground-vehicle" target="_blank" rel="noreferrer" aria-label="Open project repository (opens in a new tab)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true" class="size-4 flex-none"><!--[-1--><!--]--><path fill-rule="evenodd" d="M16,2a14,14,0,0,0-4.43,27.28c.7.13,1-.3,1-.67s0-1.21,0-2.38c-3.89.84-4.71-1.88-4.71-1.88A3.71,3.71,0,0,0,6.24,22.3c-1.27-.86.1-.85.1-.85A2.94,2.94,0,0,1,8.48,22.9a3,3,0,0,0,4.08,1.16,2.93,2.93,0,0,1,.88-1.87c-3.1-.36-6.37-1.56-6.37-6.92a5.4,5.4,0,0,1,1.44-3.76,5,5,0,0,1,.14-3.7s1.17-.38,3.85,1.43a13.3,13.3,0,0,1,7,0c2.67-1.81,3.84-1.43,3.84-1.43a5,5,0,0,1,.14,3.7,5.4,5.4,0,0,1,1.44,3.76c0,5.38-3.27,6.56-6.39,6.91a3.33,3.33,0,0,1,.95,2.59c0,1.87,0,3.38,0,3.84s.25.81,1,.67A14,14,0,0,0,16,2Z"></path></svg><!----></a><!--]--></div></aside><!----></div> <div class="inset-shadow relative mx-auto h-full w-full max-w-4xl min-w-0 overflow-hidden border border-border bg-background-inset pt-12 lg:my-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-visible lg:rounded-xl lg:pt-0"><div class="relative flex flex-col overflow-hidden mx-auto h-full w-full lg:max-h-[calc(100dvh-2rem)] svelte-1lcbi17"><div id="docs-content-container" class="scrollbar-hide min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto rounded-lg overscroll-none flex flex-col gap-8 px-4 py-8 lg:px-8 svelte-1lcbi17" style="mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent);"><section class="min-w-0 flex-1 space-y-8"><div class="space-y-4"><!--[-1--><!--]--> <h1 class="scroll-m-20 text-3xl font-medium tracking-tight text-foreground">Architecture</h1> <!--[0--><p class="max-w-4xl text-base font-normal tracking-normal text-foreground-muted">Architecture documentation</p><!--]--> <!--[0--><!--[0--><div class="relative z-20 mt-8 flex w-full gap-2 lg:hidden"><!--[0--><div class="inset-shadow w-full rounded-md bg-background-inset p-1.5"><button type="button" aria-live="polite" aria-disabled="false" class="card relative inline-flex h-9 w-full font-medium shrink-0 overflow-hidden items-center justify-center gap-2 rounded-sm bg-background px-4 py-2 text-sm whitespace-nowrap text-foreground transition-[background-color] duration-150 ease-out hover:bg-background-muted disabled:pointer-events-none disabled:opacity-50 has-[>svg]:px-3 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=size-])]:size-4 flex-1"><span class="grid place-items-center" style="grid-template-areas: 'content';"><!----><span class="flex items-center gap-2 font-medium tracking-normal text-foreground will-change-transform" style="grid-area: content;"><!--[-1--><svg role="img" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="size-4 flex-none"><title>Markdown</title><path class="stroke-current" d="M1.212 5.5h21.576c.407 0 .712.317.712.679v11.549a.695.695 0 0 1-.712.677H1.212a.695.695 0 0 1-.712-.678V6.18c0-.362.305-.679.712-.679Z"></path><path class="fill-current" d="M3.03 15.96V7.946h2.425l2.424 2.946 2.424-2.946h2.424v8.014h-2.424v-4.596L7.88 14.31l-2.424-2.946v4.596H3.03Zm15.152 0-3.636-3.89h2.424V7.947h2.424v4.125h2.424l-3.636 3.889Z"></path></svg><!--]--> <span>Copy Markdown</span></span><!----></span></button></div><!--]--> <!--[0--><div class="inset-shadow relative rounded-md bg-background-inset p-1.5"><button id="mobile-doc-actions-menu-trigger" type="button" class="card relative inline-flex h-9 w-full font-medium shrink-0 overflow-hidden items-center justify-center gap-2 rounded-sm bg-background px-4 py-2 text-sm whitespace-nowrap text-foreground transition-[background-color] duration-150 ease-out hover:bg-background-muted disabled:pointer-events-none disabled:opacity-50 has-[>svg]:px-3 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=size-])]:size-4 flex-1 w-auto! px-2.5!" aria-label="More actions" aria-haspopup="menu" aria-controls="mobile-doc-actions-menu" aria-expanded="false"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true" class="size-4"><!--[-1--><!--]--><circle cx="8" cy="16" r="2"></circle><circle cx="16" cy="16" r="2"></circle><circle cx="24" cy="16" r="2"></circle></svg><!----></button> <!--[-1--><!--]--></div><!--]--></div><!--]--><!--]--></div> <hr class="text-border"/> <div><!--[--><article data-doc-content="" class="w-full max-w-4xl"><!----><h2>Layering</h2>
+<p><code>ground_vehicle</code> keeps authored data, runtime state, force generation, and visual sync separated.</p>
+<p>Public authored/runtime surface:</p>
+<ol>
+<li><code>components.rs</code></li>
+<li><code>config.rs</code></li>
+<li><code>messages.rs</code></li>
+<li><code>drift.rs</code></li>
+<li><code>lib.rs</code></li>
+</ol>
+<p>Internal simulation modules:</p>
+<ol>
+<li><code>suspension.rs</code></li>
+<li><code>steering.rs</code></li>
+<li><code>drivetrain.rs</code></li>
+<li><code>grip.rs</code></li>
+<li><code>systems.rs</code></li>
+<li><code>visuals.rs</code></li>
+<li><code>debug.rs</code></li>
+</ol>
+<p>Avian3D provides rigid bodies, spatial queries, mass properties, and force application. The crate owns the vehicle model itself.</p>
+<h2>Entity Model</h2>
+<h3>Chassis entity</h3>
+<p>The chassis is the rigid-body root:</p>
+<ul>
+<li><code>GroundVehicle</code></li>
+<li><code>VehicleIntent</code></li>
+<li><code>GroundVehicleTelemetry</code></li>
+<li>Avian rigid-body components</li>
+<li>Avian <code>TransformInterpolation</code> for smooth presentation between fixed ticks</li>
+<li>chassis collider and authored transform</li>
+</ul>
+<p>Optional helper layers attach additional components such as <code>GroundVehicleDriftConfig</code> and <code>GroundVehicleDriftTelemetry</code>.</p>
+<h3>Wheel entities</h3>
+<p>Each wheel is a lightweight authored/runtime record:</p>
+<ul>
+<li><code>GroundVehicleWheel</code></li>
+<li><code>GroundVehicleWheelState</code></li>
+<li>optional <code>GroundVehicleWheelVisual</code></li>
+</ul>
+<p>Wheels do not need to be rigid bodies. They act as suspension probes plus cached runtime state.</p>
+<h3>Visual wheel entities</h3>
+<p>Visible wheel meshes are separate entities referenced by <code>GroundVehicleWheelVisual</code>. The crate writes their transforms in <code>PostUpdate</code> after simulation has settled. Visual sync never mutates physics state.
+Visual sync runs every render frame so separate wheel meshes continue to track the interpolated chassis pose between fixed physics ticks.</p>
+<h2>Force Flow</h2>
+<div class="code-block" data-code="VehicleIntent
+  -> clamp and resolve direction-change policy
+  -> cast each wheel suspension probe
+  -> accumulate chassis support loads
+  -> resolve steering angles
+  -> estimate engine RPM and active gear from driven-wheel speed
+  -> resolve per-wheel drive and brake requests from the configured powertrain
+  -> compute contact-patch longitudinal and lateral forces
+  -> apply anti-roll / hill-hold / yaw / airborne assists
+  -> apply aerodynamic drag and downforce
+  -> aggregate chassis telemetry
+  -> optional drift helper reads telemetry + wheel state
+  -> sync visual wheels" data-language="text">
+					<div class="shiki-theme-light"><pre class="shiki github-light" style="background-color:#fff;color:#24292e" tabindex="0"><code><span class="line"><span>VehicleIntent</span></span>
+<span class="line"><span>  -> clamp and resolve direction-change policy</span></span>
+<span class="line"><span>  -> cast each wheel suspension probe</span></span>
+<span class="line"><span>  -> accumulate chassis support loads</span></span>
+<span class="line"><span>  -> resolve steering angles</span></span>
+<span class="line"><span>  -> estimate engine RPM and active gear from driven-wheel speed</span></span>
+<span class="line"><span>  -> resolve per-wheel drive and brake requests from the configured powertrain</span></span>
+<span class="line"><span>  -> compute contact-patch longitudinal and lateral forces</span></span>
+<span class="line"><span>  -> apply anti-roll / hill-hold / yaw / airborne assists</span></span>
+<span class="line"><span>  -> apply aerodynamic drag and downforce</span></span>
+<span class="line"><span>  -> aggregate chassis telemetry</span></span>
+<span class="line"><span>  -> optional drift helper reads telemetry + wheel state</span></span>
+<span class="line"><span>  -> sync visual wheels</span></span></code></pre></div>
+					<div class="shiki-theme-dark"><pre class="shiki github-dark" style="background-color:#24292e;color:#e1e4e8" tabindex="0"><code><span class="line"><span>VehicleIntent</span></span>
+<span class="line"><span>  -> clamp and resolve direction-change policy</span></span>
+<span class="line"><span>  -> cast each wheel suspension probe</span></span>
+<span class="line"><span>  -> accumulate chassis support loads</span></span>
+<span class="line"><span>  -> resolve steering angles</span></span>
+<span class="line"><span>  -> estimate engine RPM and active gear from driven-wheel speed</span></span>
+<span class="line"><span>  -> resolve per-wheel drive and brake requests from the configured powertrain</span></span>
+<span class="line"><span>  -> compute contact-patch longitudinal and lateral forces</span></span>
+<span class="line"><span>  -> apply anti-roll / hill-hold / yaw / airborne assists</span></span>
+<span class="line"><span>  -> apply aerodynamic drag and downforce</span></span>
+<span class="line"><span>  -> aggregate chassis telemetry</span></span>
+<span class="line"><span>  -> optional drift helper reads telemetry + wheel state</span></span>
+<span class="line"><span>  -> sync visual wheels</span></span></code></pre></div>
+				</div><h2>Schedule Ordering</h2>
+<p><code>GroundVehicleSystems</code> is public and chained in this order on the injected update schedule:</p>
+<ol>
+<li><code>InputAdaptation</code></li>
+<li><code>Suspension</code></li>
+<li><code>Steering</code></li>
+<li><code>Powertrain</code></li>
+<li><code>Grip</code></li>
+<li><code>Stability</code></li>
+<li><code>Telemetry</code></li>
+</ol>
+<p><code>VisualSync</code> runs separately in <code>PostUpdate</code> before <code>TransformSystems::Propagate</code>.</p>
+<p>The optional drift helper uses its own <code>GroundVehicleDriftSystems</code> set and is expected to run after the core telemetry pass on the same fixed schedule.</p>
+<h2>Fixed-Step Assumptions</h2>
+<p>The default plugin uses <code>FixedUpdate</code> because suspension and tire forces are much easier to tune with a stable step. Consumers can still inject another fixed schedule if their app already uses a custom stepping model.</p>
+<p>Examples and the lab set <code>Time::&lt;Fixed&gt;::from_hz(60.0)</code>.</p>
+<h2>Suspension Model</h2>
+<p>Each wheel performs a sphere shapecast along the suspension travel axis:</p>
+<ul>
+<li>origin: <code>GroundVehicleWheel::mount_point</code> transformed into world space</li>
+<li>direction: chassis local down projected into world</li>
+<li>shape: sphere with wheel radius</li>
+<li>range: <code>SuspensionConfig::max_length()</code></li>
+</ul>
+<p>On a valid hit the runtime computes:</p>
+<ul>
+<li>clamped suspension length</li>
+<li>compression and suspension velocity</li>
+<li>spring + damper + bump-stop support force</li>
+<li>grounded state, contact point, and normal</li>
+</ul>
+<p>Support force is applied at the contact point on the chassis rigid body.</p>
+<h2>Steering</h2>
+<p>Steering is purely about wheel angle resolution:</p>
+<ul>
+<li><code>SteeringConfig</code> owns steering mode, max angle, rate limit, Ackermann blend, and speed reduction</li>
+<li>Ackermann geometry comes from explicit overrides when provided and otherwise falls back to the wheel layout on the chassis</li>
+<li><code>SteeringMode::Disabled</code> is the escape hatch for track-drive or non-steering wheel layouts</li>
+</ul>
+<p>The steering stage does not decide how torque is split. That is handled by the powertrain stage.</p>
+<h2>Powertrain</h2>
+<p><code>PowertrainConfig</code> splits torque production from delivery policy:</p>
+<ul>
+<li><code>engine</code>: authored torque curve and engine-braking behavior</li>
+<li><code>drive_model</code>: how torque is distributed</li>
+<li><code>gear_model</code>: how ratio selection works</li>
+<li>explicit primary and auxiliary brake budgets</li>
+</ul>
+<p>Current drive-model strategies:</p>
+<ul>
+<li><code>DriveModel::Axle</code>: conventional axle-style torque delivery using authored wheel drive weights plus <code>DifferentialConfig</code></li>
+<li><code>DriveModel::Track</code>: left/right track-drive delivery using turn-demand splitting plus <code>DifferentialConfig</code></li>
+</ul>
+<p>Current gear-model strategies:</p>
+<ul>
+<li><code>GearModel::Automatic</code>: automatic forward gears plus reverse handling and shift thresholds</li>
+<li><code>GearModel::Fixed</code>: single fixed forward/reverse ratio with optional stop-then-change or immediate direction changes</li>
+</ul>
+<p>This is the main decoupling from the older car-shaped runtime. Input is generic, and the powertrain stage chooses how to interpret it.</p>
+<h2>Grip Model</h2>
+<p>The tire model is intentionally game-ready rather than study-level:</p>
+<ul>
+<li>per-wheel angular inertia and slip-ratio estimation</li>
+<li>separate longitudinal and lateral stiffness</li>
+<li>separate grip limits</li>
+<li>simple load-sensitivity scaling</li>
+<li>friction-circle clamp so combined force stays sane</li>
+<li>low-speed traction helper</li>
+<li>optional auxiliary-brake grip shaping</li>
+<li>optional Magic Formula response curves for both longitudinal and lateral force shaping</li>
+<li>optional <code>GroundVehicleSurface</code> multipliers from the contacted entity or its rigid-body owner</li>
+</ul>
+<p>This gives a stable tuning surface for arcade-to-sim-lite handling without pretending to be a full tire research model.</p>
+<h2>Stability Helpers</h2>
+<p>The crate layers pragmatic helpers on top of the wheel forces:</p>
+<ul>
+<li>anti-roll from left/right compression delta per axle</li>
+<li>hill-hold style brake assist at near-zero speed</li>
+<li>yaw-rate damping above a speed threshold</li>
+<li>airborne upright torque for arcade-friendly recovery</li>
+<li>aerodynamic drag and optional downforce</li>
+</ul>
+<p>All of these are opt-in or tunable through config instead of hardcoded behavior.</p>
+<h2>Runtime Outputs</h2>
+<p>Core outputs:</p>
+<ul>
+<li><code>GroundVehicleWheelState</code> per wheel</li>
+<li><code>GroundVehicleTelemetry</code> per chassis</li>
+<li>messages for wheel grounded transitions, airborne state, and landings</li>
+</ul>
+<p>Optional drift outputs:</p>
+<ul>
+<li><code>GroundVehicleDriftTelemetry</code></li>
+<li><code>DriftStateChanged</code></li>
+</ul>
+<p>Those surfaces are intended for UI, VFX, audio, telemetry overlays, BRP inspection, and E2E assertions.</p>
+<h2>Testing Strategy</h2>
+<p>The crate verifies three layers:</p>
+<ul>
+<li>pure math and policy tests for suspension, steering, torque split, and direction-change rules</li>
+<li>lightweight Bevy app tests for plugin wiring and runtime state updates</li>
+<li>crate-local examples and a richer crate-local lab with E2E scenarios and screenshots</li>
+</ul>
+<!----></article> <!----><!--]--><!----> <!--[-1--><!--]--><!----></div></section><!----></div></div><!----></div> <aside class="hidden xl:block xl:w-full xl:py-8 xl:pr-4 xl:pl-4" aria-label="Table of contents and document actions"><div class="sticky top-8 flex h-full max-h-[calc(100dvh-4rem)] min-h-0 flex-col"><!--[0--><div class="min-h-0 flex-1"><div class="contents"><!--[-1--><div class="hidden text-sm tracking-normal text-foreground-muted/70 lg:block">No headings</div><!--]--></div><!----></div><!--]--> <!--[0--><!--[0--><div class="mt-auto"><div class="flex flex-col gap-1 text-sm"><!--[0--><button type="button" aria-live="polite" aria-disabled="false" class="group/option flex items-center gap-2 overflow-hidden rounded-sm px-3 py-1.5 text-left font-medium tracking-normal text-foreground-muted transition-colors duration-150 ease-out hover:bg-background-muted hover:text-foreground"><span class="grid" style="grid-template-areas: 'content';"><!----><span class="flex items-center gap-2" style="grid-area: content;"><!--[-1--><svg role="img" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="size-4 flex-none"><title>Markdown</title><path class="stroke-current" d="M1.212 5.5h21.576c.407 0 .712.317.712.679v11.549a.695.695 0 0 1-.712.677H1.212a.695.695 0 0 1-.712-.678V6.18c0-.362.305-.679.712-.679Z"></path><path class="fill-current" d="M3.03 15.96V7.946h2.425l2.424 2.946 2.424-2.946h2.424v8.014h-2.424v-4.596L7.88 14.31l-2.424-2.946v4.596H3.03Zm15.152 0-3.636-3.89h2.424V7.947h2.424v4.125h2.424l-3.636 3.889Z"></path></svg><!--]--> <span>Copy as Markdown</span></span><!----></span></button><!--]--> <!--[0--><a class="group/option flex items-center gap-2 rounded-sm px-3 py-1.5 text-left font-medium tracking-normal text-foreground-muted transition-colors duration-150 ease-out hover:bg-background-muted hover:text-foreground" href="https://github.com/julien-blanchon/saddle-vehicle-ground-vehicle/blob/main/docs//saddle-vehicle-ground-vehicle/docs/architecture.md" target="_blank" rel="noreferrer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true" class="size-4 flex-none"><!--[-1--><!--]--><path fill-rule="evenodd" d="M16,2a14,14,0,0,0-4.43,27.28c.7.13,1-.3,1-.67s0-1.21,0-2.38c-3.89.84-4.71-1.88-4.71-1.88A3.71,3.71,0,0,0,6.24,22.3c-1.27-.86.1-.85.1-.85A2.94,2.94,0,0,1,8.48,22.9a3,3,0,0,0,4.08,1.16,2.93,2.93,0,0,1,.88-1.87c-3.1-.36-6.37-1.56-6.37-6.92a5.4,5.4,0,0,1,1.44-3.76,5,5,0,0,1,.14-3.7s1.17-.38,3.85,1.43a13.3,13.3,0,0,1,7,0c2.67-1.81,3.84-1.43,3.84-1.43a5,5,0,0,1,.14,3.7,5.4,5.4,0,0,1,1.44,3.76c0,5.38-3.27,6.56-6.39,6.91a3.33,3.33,0,0,1,.95,2.59c0,1.87,0,3.38,0,3.84s.25.81,1,.67A14,14,0,0,0,16,2Z"></path></svg><!----> <span>Open in GitHub</span> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor" preserveAspectRatio="xMidYMid meet" width="16" height="16" aria-hidden="true" class="ml-auto size-4 flex-none"><!--[-1--><!--]--><path d="M26,28H6a2.0027,2.0027,0,0,1-2-2V6A2.0027,2.0027,0,0,1,6,4H16V6H6V26H26V16h2V26A2.0027,2.0027,0,0,1,26,28Z"></path><path d="M20 2 20 4 26.586 4 18 12.586 19.414 14 28 5.414 28 12 30 12 30 2 20 2z"></path></svg><!----> <span class="sr-only">(opens in a new tab)</span></a><!--]--> <!--[-1--><!--]--> <!--[-1--><!--]--></div></div><!--]--><!--]--></div></aside></div></main><!--]--><!--]--><!----> <!--[0--><!--[-1--><!--]--><!--]--><!--]--><!--]--> <!--[-1--><!--]--><!--]-->
+			
+			<script>
+				{
+					__sveltekit_13ymmv2 = {
+						base: new URL("../..", location).pathname.slice(0, -1),
+						assets: "/saddle-vehicle-ground-vehicle"
+					};
+
+					const element = document.currentScript.parentElement;
+
+					Promise.all([
+						import("../../_app/immutable/entry/start.BylNNWSA.js"),
+						import("../../_app/immutable/entry/app.DtKXVTpw.js")
+					]).then(([kit, app]) => {
+						kit.start(app, element, {
+							node_ids: [0, 2, 5],
+							data: [null,null,{type:"data",data:{html:"\u003Ch2>Layering\u003C/h2>\n\u003Cp>\u003Ccode>ground_vehicle\u003C/code> keeps authored data, runtime state, force generation, and visual sync separated.\u003C/p>\n\u003Cp>Public authored/runtime surface:\u003C/p>\n\u003Col>\n\u003Cli>\u003Ccode>components.rs\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>config.rs\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>messages.rs\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>drift.rs\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>lib.rs\u003C/code>\u003C/li>\n\u003C/ol>\n\u003Cp>Internal simulation modules:\u003C/p>\n\u003Col>\n\u003Cli>\u003Ccode>suspension.rs\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>steering.rs\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>drivetrain.rs\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>grip.rs\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>systems.rs\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>visuals.rs\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>debug.rs\u003C/code>\u003C/li>\n\u003C/ol>\n\u003Cp>Avian3D provides rigid bodies, spatial queries, mass properties, and force application. The crate owns the vehicle model itself.\u003C/p>\n\u003Ch2>Entity Model\u003C/h2>\n\u003Ch3>Chassis entity\u003C/h3>\n\u003Cp>The chassis is the rigid-body root:\u003C/p>\n\u003Cul>\n\u003Cli>\u003Ccode>GroundVehicle\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>VehicleIntent\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>GroundVehicleTelemetry\u003C/code>\u003C/li>\n\u003Cli>Avian rigid-body components\u003C/li>\n\u003Cli>Avian \u003Ccode>TransformInterpolation\u003C/code> for smooth presentation between fixed ticks\u003C/li>\n\u003Cli>chassis collider and authored transform\u003C/li>\n\u003C/ul>\n\u003Cp>Optional helper layers attach additional components such as \u003Ccode>GroundVehicleDriftConfig\u003C/code> and \u003Ccode>GroundVehicleDriftTelemetry\u003C/code>.\u003C/p>\n\u003Ch3>Wheel entities\u003C/h3>\n\u003Cp>Each wheel is a lightweight authored/runtime record:\u003C/p>\n\u003Cul>\n\u003Cli>\u003Ccode>GroundVehicleWheel\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>GroundVehicleWheelState\u003C/code>\u003C/li>\n\u003Cli>optional \u003Ccode>GroundVehicleWheelVisual\u003C/code>\u003C/li>\n\u003C/ul>\n\u003Cp>Wheels do not need to be rigid bodies. They act as suspension probes plus cached runtime state.\u003C/p>\n\u003Ch3>Visual wheel entities\u003C/h3>\n\u003Cp>Visible wheel meshes are separate entities referenced by \u003Ccode>GroundVehicleWheelVisual\u003C/code>. The crate writes their transforms in \u003Ccode>PostUpdate\u003C/code> after simulation has settled. Visual sync never mutates physics state.\nVisual sync runs every render frame so separate wheel meshes continue to track the interpolated chassis pose between fixed physics ticks.\u003C/p>\n\u003Ch2>Force Flow\u003C/h2>\n\u003Cdiv class=\"code-block\" data-code=\"VehicleIntent\n  -> clamp and resolve direction-change policy\n  -> cast each wheel suspension probe\n  -> accumulate chassis support loads\n  -> resolve steering angles\n  -> estimate engine RPM and active gear from driven-wheel speed\n  -> resolve per-wheel drive and brake requests from the configured powertrain\n  -> compute contact-patch longitudinal and lateral forces\n  -> apply anti-roll / hill-hold / yaw / airborne assists\n  -> apply aerodynamic drag and downforce\n  -> aggregate chassis telemetry\n  -> optional drift helper reads telemetry + wheel state\n  -> sync visual wheels\" data-language=\"text\">\n\t\t\t\t\t\u003Cdiv class=\"shiki-theme-light\">\u003Cpre class=\"shiki github-light\" style=\"background-color:#fff;color:#24292e\" tabindex=\"0\">\u003Ccode>\u003Cspan class=\"line\">\u003Cspan>VehicleIntent\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> clamp and resolve direction-change policy\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> cast each wheel suspension probe\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> accumulate chassis support loads\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> resolve steering angles\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> estimate engine RPM and active gear from driven-wheel speed\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> resolve per-wheel drive and brake requests from the configured powertrain\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> compute contact-patch longitudinal and lateral forces\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> apply anti-roll / hill-hold / yaw / airborne assists\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> apply aerodynamic drag and downforce\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> aggregate chassis telemetry\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> optional drift helper reads telemetry + wheel state\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> sync visual wheels\u003C/span>\u003C/span>\u003C/code>\u003C/pre>\u003C/div>\n\t\t\t\t\t\u003Cdiv class=\"shiki-theme-dark\">\u003Cpre class=\"shiki github-dark\" style=\"background-color:#24292e;color:#e1e4e8\" tabindex=\"0\">\u003Ccode>\u003Cspan class=\"line\">\u003Cspan>VehicleIntent\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> clamp and resolve direction-change policy\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> cast each wheel suspension probe\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> accumulate chassis support loads\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> resolve steering angles\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> estimate engine RPM and active gear from driven-wheel speed\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> resolve per-wheel drive and brake requests from the configured powertrain\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> compute contact-patch longitudinal and lateral forces\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> apply anti-roll / hill-hold / yaw / airborne assists\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> apply aerodynamic drag and downforce\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> aggregate chassis telemetry\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> optional drift helper reads telemetry + wheel state\u003C/span>\u003C/span>\n\u003Cspan class=\"line\">\u003Cspan>  -> sync visual wheels\u003C/span>\u003C/span>\u003C/code>\u003C/pre>\u003C/div>\n\t\t\t\t\u003C/div>\u003Ch2>Schedule Ordering\u003C/h2>\n\u003Cp>\u003Ccode>GroundVehicleSystems\u003C/code> is public and chained in this order on the injected update schedule:\u003C/p>\n\u003Col>\n\u003Cli>\u003Ccode>InputAdaptation\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>Suspension\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>Steering\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>Powertrain\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>Grip\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>Stability\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>Telemetry\u003C/code>\u003C/li>\n\u003C/ol>\n\u003Cp>\u003Ccode>VisualSync\u003C/code> runs separately in \u003Ccode>PostUpdate\u003C/code> before \u003Ccode>TransformSystems::Propagate\u003C/code>.\u003C/p>\n\u003Cp>The optional drift helper uses its own \u003Ccode>GroundVehicleDriftSystems\u003C/code> set and is expected to run after the core telemetry pass on the same fixed schedule.\u003C/p>\n\u003Ch2>Fixed-Step Assumptions\u003C/h2>\n\u003Cp>The default plugin uses \u003Ccode>FixedUpdate\u003C/code> because suspension and tire forces are much easier to tune with a stable step. Consumers can still inject another fixed schedule if their app already uses a custom stepping model.\u003C/p>\n\u003Cp>Examples and the lab set \u003Ccode>Time::&lt;Fixed&gt;::from_hz(60.0)\u003C/code>.\u003C/p>\n\u003Ch2>Suspension Model\u003C/h2>\n\u003Cp>Each wheel performs a sphere shapecast along the suspension travel axis:\u003C/p>\n\u003Cul>\n\u003Cli>origin: \u003Ccode>GroundVehicleWheel::mount_point\u003C/code> transformed into world space\u003C/li>\n\u003Cli>direction: chassis local down projected into world\u003C/li>\n\u003Cli>shape: sphere with wheel radius\u003C/li>\n\u003Cli>range: \u003Ccode>SuspensionConfig::max_length()\u003C/code>\u003C/li>\n\u003C/ul>\n\u003Cp>On a valid hit the runtime computes:\u003C/p>\n\u003Cul>\n\u003Cli>clamped suspension length\u003C/li>\n\u003Cli>compression and suspension velocity\u003C/li>\n\u003Cli>spring + damper + bump-stop support force\u003C/li>\n\u003Cli>grounded state, contact point, and normal\u003C/li>\n\u003C/ul>\n\u003Cp>Support force is applied at the contact point on the chassis rigid body.\u003C/p>\n\u003Ch2>Steering\u003C/h2>\n\u003Cp>Steering is purely about wheel angle resolution:\u003C/p>\n\u003Cul>\n\u003Cli>\u003Ccode>SteeringConfig\u003C/code> owns steering mode, max angle, rate limit, Ackermann blend, and speed reduction\u003C/li>\n\u003Cli>Ackermann geometry comes from explicit overrides when provided and otherwise falls back to the wheel layout on the chassis\u003C/li>\n\u003Cli>\u003Ccode>SteeringMode::Disabled\u003C/code> is the escape hatch for track-drive or non-steering wheel layouts\u003C/li>\n\u003C/ul>\n\u003Cp>The steering stage does not decide how torque is split. That is handled by the powertrain stage.\u003C/p>\n\u003Ch2>Powertrain\u003C/h2>\n\u003Cp>\u003Ccode>PowertrainConfig\u003C/code> splits torque production from delivery policy:\u003C/p>\n\u003Cul>\n\u003Cli>\u003Ccode>engine\u003C/code>: authored torque curve and engine-braking behavior\u003C/li>\n\u003Cli>\u003Ccode>drive_model\u003C/code>: how torque is distributed\u003C/li>\n\u003Cli>\u003Ccode>gear_model\u003C/code>: how ratio selection works\u003C/li>\n\u003Cli>explicit primary and auxiliary brake budgets\u003C/li>\n\u003C/ul>\n\u003Cp>Current drive-model strategies:\u003C/p>\n\u003Cul>\n\u003Cli>\u003Ccode>DriveModel::Axle\u003C/code>: conventional axle-style torque delivery using authored wheel drive weights plus \u003Ccode>DifferentialConfig\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>DriveModel::Track\u003C/code>: left/right track-drive delivery using turn-demand splitting plus \u003Ccode>DifferentialConfig\u003C/code>\u003C/li>\n\u003C/ul>\n\u003Cp>Current gear-model strategies:\u003C/p>\n\u003Cul>\n\u003Cli>\u003Ccode>GearModel::Automatic\u003C/code>: automatic forward gears plus reverse handling and shift thresholds\u003C/li>\n\u003Cli>\u003Ccode>GearModel::Fixed\u003C/code>: single fixed forward/reverse ratio with optional stop-then-change or immediate direction changes\u003C/li>\n\u003C/ul>\n\u003Cp>This is the main decoupling from the older car-shaped runtime. Input is generic, and the powertrain stage chooses how to interpret it.\u003C/p>\n\u003Ch2>Grip Model\u003C/h2>\n\u003Cp>The tire model is intentionally game-ready rather than study-level:\u003C/p>\n\u003Cul>\n\u003Cli>per-wheel angular inertia and slip-ratio estimation\u003C/li>\n\u003Cli>separate longitudinal and lateral stiffness\u003C/li>\n\u003Cli>separate grip limits\u003C/li>\n\u003Cli>simple load-sensitivity scaling\u003C/li>\n\u003Cli>friction-circle clamp so combined force stays sane\u003C/li>\n\u003Cli>low-speed traction helper\u003C/li>\n\u003Cli>optional auxiliary-brake grip shaping\u003C/li>\n\u003Cli>optional Magic Formula response curves for both longitudinal and lateral force shaping\u003C/li>\n\u003Cli>optional \u003Ccode>GroundVehicleSurface\u003C/code> multipliers from the contacted entity or its rigid-body owner\u003C/li>\n\u003C/ul>\n\u003Cp>This gives a stable tuning surface for arcade-to-sim-lite handling without pretending to be a full tire research model.\u003C/p>\n\u003Ch2>Stability Helpers\u003C/h2>\n\u003Cp>The crate layers pragmatic helpers on top of the wheel forces:\u003C/p>\n\u003Cul>\n\u003Cli>anti-roll from left/right compression delta per axle\u003C/li>\n\u003Cli>hill-hold style brake assist at near-zero speed\u003C/li>\n\u003Cli>yaw-rate damping above a speed threshold\u003C/li>\n\u003Cli>airborne upright torque for arcade-friendly recovery\u003C/li>\n\u003Cli>aerodynamic drag and optional downforce\u003C/li>\n\u003C/ul>\n\u003Cp>All of these are opt-in or tunable through config instead of hardcoded behavior.\u003C/p>\n\u003Ch2>Runtime Outputs\u003C/h2>\n\u003Cp>Core outputs:\u003C/p>\n\u003Cul>\n\u003Cli>\u003Ccode>GroundVehicleWheelState\u003C/code> per wheel\u003C/li>\n\u003Cli>\u003Ccode>GroundVehicleTelemetry\u003C/code> per chassis\u003C/li>\n\u003Cli>messages for wheel grounded transitions, airborne state, and landings\u003C/li>\n\u003C/ul>\n\u003Cp>Optional drift outputs:\u003C/p>\n\u003Cul>\n\u003Cli>\u003Ccode>GroundVehicleDriftTelemetry\u003C/code>\u003C/li>\n\u003Cli>\u003Ccode>DriftStateChanged\u003C/code>\u003C/li>\n\u003C/ul>\n\u003Cp>Those surfaces are intended for UI, VFX, audio, telemetry overlays, BRP inspection, and E2E assertions.\u003C/p>\n\u003Ch2>Testing Strategy\u003C/h2>\n\u003Cp>The crate verifies three layers:\u003C/p>\n\u003Cul>\n\u003Cli>pure math and policy tests for suspension, steering, torque split, and direction-change rules\u003C/li>\n\u003Cli>lightweight Bevy app tests for plugin wiring and runtime state updates\u003C/li>\n\u003Cli>crate-local examples and a richer crate-local lab with E2E scenarios and screenshots\u003C/li>\n\u003C/ul>\n",title:"Architecture",description:"Architecture documentation",rawMarkdown:"## Layering\n\n`ground_vehicle` keeps authored data, runtime state, force generation, and visual sync separated.\n\nPublic authored/runtime surface:\n\n1. `components.rs`\n2. `config.rs`\n3. `messages.rs`\n4. `drift.rs`\n5. `lib.rs`\n\nInternal simulation modules:\n\n1. `suspension.rs`\n2. `steering.rs`\n3. `drivetrain.rs`\n4. `grip.rs`\n5. `systems.rs`\n6. `visuals.rs`\n7. `debug.rs`\n\nAvian3D provides rigid bodies, spatial queries, mass properties, and force application. The crate owns the vehicle model itself.\n\n## Entity Model\n\n### Chassis entity\n\nThe chassis is the rigid-body root:\n\n- `GroundVehicle`\n- `VehicleIntent`\n- `GroundVehicleTelemetry`\n- Avian rigid-body components\n- Avian `TransformInterpolation` for smooth presentation between fixed ticks\n- chassis collider and authored transform\n\nOptional helper layers attach additional components such as `GroundVehicleDriftConfig` and `GroundVehicleDriftTelemetry`.\n\n### Wheel entities\n\nEach wheel is a lightweight authored/runtime record:\n\n- `GroundVehicleWheel`\n- `GroundVehicleWheelState`\n- optional `GroundVehicleWheelVisual`\n\nWheels do not need to be rigid bodies. They act as suspension probes plus cached runtime state.\n\n### Visual wheel entities\n\nVisible wheel meshes are separate entities referenced by `GroundVehicleWheelVisual`. The crate writes their transforms in `PostUpdate` after simulation has settled. Visual sync never mutates physics state.\nVisual sync runs every render frame so separate wheel meshes continue to track the interpolated chassis pose between fixed physics ticks.\n\n## Force Flow\n\n```text\nVehicleIntent\n  -> clamp and resolve direction-change policy\n  -> cast each wheel suspension probe\n  -> accumulate chassis support loads\n  -> resolve steering angles\n  -> estimate engine RPM and active gear from driven-wheel speed\n  -> resolve per-wheel drive and brake requests from the configured powertrain\n  -> compute contact-patch longitudinal and lateral forces\n  -> apply anti-roll / hill-hold / yaw / airborne assists\n  -> apply aerodynamic drag and downforce\n  -> aggregate chassis telemetry\n  -> optional drift helper reads telemetry + wheel state\n  -> sync visual wheels\n```\n\n## Schedule Ordering\n\n`GroundVehicleSystems` is public and chained in this order on the injected update schedule:\n\n1. `InputAdaptation`\n2. `Suspension`\n3. `Steering`\n4. `Powertrain`\n5. `Grip`\n6. `Stability`\n7. `Telemetry`\n\n`VisualSync` runs separately in `PostUpdate` before `TransformSystems::Propagate`.\n\nThe optional drift helper uses its own `GroundVehicleDriftSystems` set and is expected to run after the core telemetry pass on the same fixed schedule.\n\n## Fixed-Step Assumptions\n\nThe default plugin uses `FixedUpdate` because suspension and tire forces are much easier to tune with a stable step. Consumers can still inject another fixed schedule if their app already uses a custom stepping model.\n\nExamples and the lab set `Time::\u003CFixed>::from_hz(60.0)`.\n\n## Suspension Model\n\nEach wheel performs a sphere shapecast along the suspension travel axis:\n\n- origin: `GroundVehicleWheel::mount_point` transformed into world space\n- direction: chassis local down projected into world\n- shape: sphere with wheel radius\n- range: `SuspensionConfig::max_length()`\n\nOn a valid hit the runtime computes:\n\n- clamped suspension length\n- compression and suspension velocity\n- spring + damper + bump-stop support force\n- grounded state, contact point, and normal\n\nSupport force is applied at the contact point on the chassis rigid body.\n\n## Steering\n\nSteering is purely about wheel angle resolution:\n\n- `SteeringConfig` owns steering mode, max angle, rate limit, Ackermann blend, and speed reduction\n- Ackermann geometry comes from explicit overrides when provided and otherwise falls back to the wheel layout on the chassis\n- `SteeringMode::Disabled` is the escape hatch for track-drive or non-steering wheel layouts\n\nThe steering stage does not decide how torque is split. That is handled by the powertrain stage.\n\n## Powertrain\n\n`PowertrainConfig` splits torque production from delivery policy:\n\n- `engine`: authored torque curve and engine-braking behavior\n- `drive_model`: how torque is distributed\n- `gear_model`: how ratio selection works\n- explicit primary and auxiliary brake budgets\n\nCurrent drive-model strategies:\n\n- `DriveModel::Axle`: conventional axle-style torque delivery using authored wheel drive weights plus `DifferentialConfig`\n- `DriveModel::Track`: left/right track-drive delivery using turn-demand splitting plus `DifferentialConfig`\n\nCurrent gear-model strategies:\n\n- `GearModel::Automatic`: automatic forward gears plus reverse handling and shift thresholds\n- `GearModel::Fixed`: single fixed forward/reverse ratio with optional stop-then-change or immediate direction changes\n\nThis is the main decoupling from the older car-shaped runtime. Input is generic, and the powertrain stage chooses how to interpret it.\n\n## Grip Model\n\nThe tire model is intentionally game-ready rather than study-level:\n\n- per-wheel angular inertia and slip-ratio estimation\n- separate longitudinal and lateral stiffness\n- separate grip limits\n- simple load-sensitivity scaling\n- friction-circle clamp so combined force stays sane\n- low-speed traction helper\n- optional auxiliary-brake grip shaping\n- optional Magic Formula response curves for both longitudinal and lateral force shaping\n- optional `GroundVehicleSurface` multipliers from the contacted entity or its rigid-body owner\n\nThis gives a stable tuning surface for arcade-to-sim-lite handling without pretending to be a full tire research model.\n\n## Stability Helpers\n\nThe crate layers pragmatic helpers on top of the wheel forces:\n\n- anti-roll from left/right compression delta per axle\n- hill-hold style brake assist at near-zero speed\n- yaw-rate damping above a speed threshold\n- airborne upright torque for arcade-friendly recovery\n- aerodynamic drag and optional downforce\n\nAll of these are opt-in or tunable through config instead of hardcoded behavior.\n\n## Runtime Outputs\n\nCore outputs:\n\n- `GroundVehicleWheelState` per wheel\n- `GroundVehicleTelemetry` per chassis\n- messages for wheel grounded transitions, airborne state, and landings\n\nOptional drift outputs:\n\n- `GroundVehicleDriftTelemetry`\n- `DriftStateChanged`\n\nThose surfaces are intended for UI, VFX, audio, telemetry overlays, BRP inspection, and E2E assertions.\n\n## Testing Strategy\n\nThe crate verifies three layers:\n\n- pure math and policy tests for suspension, steering, torque split, and direction-change rules\n- lightweight Bevy app tests for plugin wiring and runtime state updates\n- crate-local examples and a richer crate-local lab with E2E scenarios and screenshots\n",slug:"architecture"},uses:{params:["slug"]}}],
+							form: null,
+							error: null
+						});
+					});
+				}
+			</script>
+		</div>
+	</body>
+</html>
